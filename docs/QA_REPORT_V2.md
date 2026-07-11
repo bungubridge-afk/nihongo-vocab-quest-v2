@@ -2,10 +2,11 @@
 
 ## 1. Summary
 
-- **Overall status:** Pass with minor issues (no blocking bugs; 2 low-severity polish items found)
+- **Overall status:** Pass — no blocking bugs, no known blockers
 - **Build status:** ✅ Pass (`npm.cmd run build` — compiled successfully, no TypeScript errors)
 - **Lint status:** ✅ Pass (`npm.cmd run lint` — no errors, no warnings)
-- **Browser test status:** ✅ Completed via dev server (Onboarding → Home → Café lesson → Reise challenge-fail → Word Collection → Word Practice → Review, full loop)
+- **Browser test status:** ✅ Completed via dev server (Onboarding → Home → Café lesson → Reise → locked-category access attempt → replay → Word Collection → Word Practice → Review, full loop)
+- Both bugs from the previous QA pass (locked-category URL bypass, word-level romaji in Word Practice phrase feedback) were fixed and have been re-verified in this pass — see §8 and §9.
 
 ## 2. Tested Environment
 
@@ -24,13 +25,13 @@
 |---|---|---|
 | `/` | ✅ OK | Onboarding shown on first visit; Home / Quest Map shown after profile exists |
 | `/lesson` (no `category`) | ✅ OK | Defaults to `cafe` as specified |
-| `/lesson?category=cafe` | ✅ OK | 5 questions in fixed order, Result screen works |
-| `/lesson?category=reise` | ✅ OK | 5 questions, Abschluss-Challenge on Q5 |
+| `/lesson?category=cafe` | ✅ OK | Unlocked by default, playable; 5 questions in fixed order; replay works |
+| `/lesson?category=reise` | ✅ OK | Playable once Café is cleared (`unlockedCategories` includes `reise`) |
+| `/lesson?category=schule` (locked) | ✅ OK | Shows "Diese Kategorie ist noch gesperrt." + "Zurück zur Karte"; no questions rendered; progress unaffected |
 | `/lesson?category=invalid` | ✅ OK | Shows "Diese Kategorie wurde nicht gefunden." + "Zurück zur Karte" button |
 | `/vocabulary` | ✅ OK | Word Collection renders, filters work |
-| `/practice?word=water` | ✅ OK | Water-only 5 questions; **no Hydration/Recoverable Error** (confirmed via `nextjs-portal` shadow-root inspection, both on normal load and hard reload) |
-| `/practice?word=coffee` | ✅ OK | Coffee-only questions |
-| `/practice?word=bread` / `drink` / `eat` / `hotel` | ✅ OK | Spot-checked; each word's meaning is the Q1 answer, no cross-word main-topic leakage |
+| `/practice?word=water` | ✅ OK | Water-only 5 questions; **no Hydration/Recoverable Error** (confirmed via `nextjs-portal` shadow-root inspection on fresh loads) |
+| `/practice?word=coffee` / `bread` / `drink` / `eat` / `station` | ✅ OK | Each word's meaning is the Q1 answer, no cross-word main-topic leakage; sentence-level romaji verified (see §6) |
 | `/practice?word=invalid` | ✅ OK | Shows "Wortkarte nicht gefunden." + "Zur Sammlung" button |
 | `/review` | ✅ OK | Empty state and populated state both render correctly |
 
@@ -38,35 +39,37 @@
 
 | Flow | Result | Notes |
 |---|---|---|
-| Onboarding (5 questions) | ✅ Pass | Auto-advance on click works; profile saved to `nvq_profile`; no XP/cards granted |
+| Onboarding (5 questions) | ✅ Pass | Auto-advance on click works; profile saved to `nvq_profile`; no XP/cards granted; re-verified after `localStorage.clear()` in this pass |
 | Home / Quest Map (initial) | ✅ Pass | Level 0 / 0 XP / 0 Karten; Café = current; Reise/Schule/Freunde/Abschluss-Review = locked; Next Unlock = Reise |
+| Locked-category direct access (`/lesson?category=schule`) | ✅ Pass | Lock screen shown, no questions playable, `nvq_xp` / `nvq_completed_categories` / `nvq_collected_cards` all unchanged (see §9) |
 | Café lesson (Q1–Q5) | ✅ Pass | Fixed order; Q4 = "Wasser bitte." → "水をください。"; Q5 = Abschluss-Challenge "Kaffee und Brot bitte." → "コーヒーとパンをください。"; no kana/romaji leak before answering |
 | Café result (first clear) | ✅ Pass | "Level 1 erreicht!" / +50 XP / 5 Karten gesammelt / Reise freigeschaltet |
 | Home after Café clear | ✅ Pass | Level 1 / 50 XP / 5 Karten; Café = completed (✓, "Wiederholen"); Reise = current; Schule = locked; Next Unlock = Schule |
-| Replay (Café again, all correct) | ✅ Pass | Result = "Wiederholung abgeschlossen", XP +0, Neue Karten 0; `nvq_xp` stayed at 50, `nvq_collected_cards` unchanged |
+| Reise now playable / Schule still locked | ✅ Pass | `/lesson?category=reise` loads normally; `/lesson?category=schule` still shows the lock screen immediately after Café clear |
+| Replay (Café again, all correct) | ✅ Pass | Result = "Wiederholung abgeschlossen", XP +0, Neue Karten 0; `nvq_xp` stayed at 50, `nvq_collected_cards` unchanged (see §9) |
 | Challenge failure (Reise Q5 wrong) | ✅ Pass | Result = "Fast geschafft" / "Abschluss-Challenge noch einmal üben", XP +0, 0 Karten, "Noch einmal" + "Zurück zur Karte"; `nvq_completed_categories` stayed `["cafe"]` (Reise not recorded) |
 | Word Collection (initial) | ✅ Pass | 0/20 Karten; Café 5 cards = Sammelbar; Reise/Schule/Freunde = Locked (kanji hidden as "???", "Freigeschaltet nach …") |
 | Word Collection (after Café clear) | ✅ Pass | 5/20 Karten; Café 5 cards = Gesammelt; Reise cards = Sammelbar; Schule/Freunde = Locked |
-| Word Practice (water, all correct) | ✅ Pass | Exact Q1–Q5 per spec; `nvq_known_words` gains `"water"` |
+| Word Practice (water, all correct) | ✅ Pass | Exact Q1–Q5 per spec; `nvq_known_words` gains `"water"`; Q5 feedback romaji = `mizu o kudasai` (sentence-level, fixed) |
 | Word Practice (1 wrong answer) | ✅ Pass | `nvq_weak_words` gains the word id; `nvq_known_words` unaffected |
 | Review (empty) | ✅ Pass | "Noch keine schwachen Wörter." + guidance text + 2 buttons |
 | Review (populated) | ✅ Pass | Weak word card shown with kanji/kana/romaji/german/category/shortTip + "Karte üben"; "Karte üben" → `/practice?word=…`; after a full-correct retry the word disappears from "Zu üben" and appears under "Schon sicher" |
 
 ## 5. Data / localStorage Verification
 
-| Key | Initial (after clear + Onboarding) | After Café clear | After Practice (water, full correct) | Issues |
-|---|---|---|---|---|
-| `nvq_profile` | Set (5 answers + `createdAt`) | unchanged | unchanged | None |
-| `nvq_xp` | `null` → reads as `0` | `"50"` | unchanged (`"50"`) | None |
-| `nvq_collected_cards` | `null` → reads as `[]` | `["coffee","water","bread","drink","eat"]` | unchanged | None |
-| `nvq_completed_categories` | `null` → reads as `[]` | `["cafe"]` | unchanged | None |
-| `nvq_unlocked_categories` | `null` → reads as `["cafe"]` | `["cafe","reise"]` | unchanged | None |
-| `nvq_known_words` | `null` → reads as `[]` | unchanged | `["water"]` | None |
-| `nvq_weak_words` | `null` → reads as `[]` | unchanged | unchanged (`[]`) — becomes `["water"]` after a subsequent 1-wrong-answer run, then empties again after a full-correct retry | None |
+| Key | Initial (after clear + Onboarding) | After Café clear | Locked-category access attempt | After Practice (water, full correct) | Issues |
+|---|---|---|---|---|---|
+| `nvq_profile` | Set (5 answers + `createdAt`) | unchanged | unchanged | unchanged | None |
+| `nvq_xp` | `null` → reads as `0` | `"50"` | unchanged | unchanged (`"50"`) | None |
+| `nvq_collected_cards` | `null` → reads as `[]` | `["coffee","water","bread","drink","eat"]` | unchanged | unchanged | None |
+| `nvq_completed_categories` | `null` → reads as `[]` | `["cafe"]` | unchanged | unchanged | None |
+| `nvq_unlocked_categories` | `null` → reads as `["cafe"]` | `["cafe","reise"]` | unchanged | unchanged | None |
+| `nvq_known_words` | `null` → reads as `[]` | unchanged | unchanged | `["water"]` | None |
+| `nvq_weak_words` | `null` → reads as `[]` | unchanged | unchanged | unchanged (`[]`) — becomes `["word"]` after a subsequent 1-wrong-answer run, then empties again after a full-correct retry | None |
 
 Deprecated keys (`nvq_progress`, `nvq_streak`, `nvq_recent_reviews`, `nvq_level`, `nvq_boss_clears`) were verified absent from `src/lib/storage.ts` — confirmed via source review, matching APP_SPEC_V2 §11.
 
-No double-XP-grant or double-card-grant was observed on replay in any tested scenario (Café replay, Challenge failure).
+No double-XP-grant or double-card-grant was observed on replay in any tested scenario (Café replay, Challenge failure, or an attempted locked-category access).
 
 ## 6. Learning Content Verification
 
@@ -74,55 +77,67 @@ No double-XP-grant or double-card-grant was observed on replay in any tested sce
 - **Café Q5 (Abschluss-Challenge):** prompt `Kaffee und Brot bitte.` → choices `コーヒーとパンをください。 / コーヒーを飲みます。パンを食べます。 / コーヒーを食べます。パンを飲みます。 / 水と駅をください。` → correct = `コーヒーとパンをください。`. Post-answer feedback: `コーヒーとパンをください。 · koohii to pan o kudasai · Kaffee und Brot bitte.` — **exact match to spec**. "Abschluss-Challenge" badge shown; no "Boss" wording anywhere.
 - **Water practice Q1–Q5:** confirmed exact matches — Q1 `水→Wasser`, Q2 `Wasser→水`, Q3 `水____ください。→を`, Q4 `水を____。→ください`, Q5 `Wasser bitte.→水をください。`.
 - **Kana leakage:** none observed. Prompts/instructions/choices never contain kana readings or romaji before an answer is submitted; `shortTip`/`detailTip`/`answerKana` only render inside `FeedbackPanel` after `answered === true`.
-- **phrase-choice feedback accuracy:** for Lesson questions (Café/Reise, which use hand-authored `answerKana`/`answerRomaji`/`answerGerman`), the feedback shows the full-phrase reading correctly (e.g. `mizu o kudasai`, `koohii to pan o kudasai`). For dynamically-built Word Practice phrase-choice questions (e.g. water Q5), the romaji field falls back to the single-word `vocab.romaji` (e.g. `"mizu"`) rather than a full-sentence romaji, because `VocabItem` has no `exampleRomaji` field. This is a known, pre-existing simplification (documented since Phase 1) — see Bugs/Polish sections below.
+- **phrase-choice feedback accuracy (fixed):** Word Practice phrase-choice questions now show sentence-level romaji for all 5 Café words, verified directly in the browser:
+  - water: `Wasser bitte.` → `水をください。` → romaji `mizu o kudasai`
+  - coffee: `Einen Kaffee bitte.` → `コーヒーをください。` → romaji `koohii o kudasai`
+  - bread: `Brot bitte.` → `パンをください。` → romaji `pan o kudasai`
+  - drink: `Ich trinke Wasser.` → `水を飲みます。` → romaji `mizu o nomimasu`
+  - eat: `Ich esse Brot.` → `パンを食べます。` → romaji `pan o tabemasu`
+  - For words without a sentence-level romaji entry (e.g. `station`), the romaji line is safely omitted (`えきはどこですか。 · Wo ist der Bahnhof?`, no kana/romaji reading line falls back to the word-level `"eki"`). Lesson-flow phrase-choice questions (Café/Reise/Schule/Freunde/Abschluss-Review, hand-authored in `questData.ts`) were unaffected by this fix — they already carried their own explicit sentence-level `answerRomaji`.
 
 ## 7. UI / UX Findings
 
 **Good:**
 - Quest Map reads clearly as a vertical map (connecting lines, current/completed/locked states, distinct gold styling for Abschluss-Review) rather than a flat category grid — matches the "not a plain grid" requirement.
 - Consistent design language across all 5 screens (shared `Button`/`Card`/`Badge`/`FeedbackPanel` components); no visual regressions found between phases.
-- Mobile (375×812) and desktop (1280×900) layouts both checked — no horizontal overflow on Home, Vocabulary, or Lesson (`document.body.scrollWidth` never exceeded `clientWidth`); Home's sidebar cards correctly move from a right-hand column (desktop) to a stacked column (mobile).
+- Mobile (375×812) and desktop (1280×900) layouts both checked — no horizontal overflow on Home, Vocabulary, or Lesson; Home's sidebar cards correctly move from a right-hand column (desktop) to a stacked column (mobile).
 - Locked vocabulary cards strike a reasonable balance: german stays visible (dimmed), kanji is hidden as "???", and "Freigeschaltet nach …" tells the user exactly what to do next.
+- Locked *lesson* categories now behave the same way as locked vocabulary cards conceptually — a clear, dedicated message ("Diese Kategorie ist noch gesperrt.") rather than silently letting the user play out of order.
 - "Abbrechen" during a lesson reliably returns to Home; "Zur Sammlung" / "Zur Karte" navigation is consistent across Practice and Review.
 
-**Minor concerns (non-blocking):**
-- `/lesson?category=schule` (or any not-yet-unlocked category) is directly reachable by typing the URL, bypassing the Quest Map's lock — see Bug #1 below.
-- The Word Practice phrase-choice romaji-fallback issue (single word instead of full phrase) — see Bug #2 below.
+**Minor concerns (non-blocking, tracked as polish, not bugs):**
 - On the Onboarding screen, the option grid is single-column below the `sm` breakpoint and 2-column above it; on a landscape-phone width this can feel a little sparse, but nothing breaks.
 - The "Fortschritt" sidebar card on Home always says "Kleine Schritte, echte Sätze." regardless of progress — a static tagline rather than dynamic encouragement, which is fine for MVP but worth revisiting later.
+- Words without a sentence-level romaji entry in Word Practice show no romaji line at all rather than any reading — acceptable and safe per design, but could be filled in with more sentence-level romaji data over time (see §10 content expansion).
 
 ## 8. Bugs Found
 
-No blocking bugs. Two low-severity, non-blocking items:
+**Blocking bugs: 0.**
 
-**Bug #1 — Locked lesson categories are reachable directly via URL**
-- Severity: Low
-- Reproduction steps: With only Café completed, navigate directly to `/lesson?category=schule` (or `freunde`, `review`).
-- Expected: Either the category loads only once actually unlocked, or the user is redirected/blocked with a message, consistent with the Quest Map's locked state.
-- Actual: The lesson loads and is fully playable, regardless of `unlockedCategories`. Answering its Abschluss-Challenge correctly *would* still call `recordCategoryCompletion`, which lets a user skip ahead of the intended progression by guessing the URL.
-- Suggested fix: In `src/app/lesson/page.tsx`, after resolving `category`, also check `getUnlockedCategories().includes(category.id)`; if not unlocked, render the same "not found" / locked view used for invalid categories. (This was a deliberate scope decision in the Phase 3-B prompt, which only asked for "not found" handling on invalid IDs — flagging it now since full-MVP QA is in scope.)
+Both bugs identified in the previous QA pass have been fixed and re-verified in this pass:
 
-**Bug #2 — Word Practice phrase-choice romaji is word-level, not phrase-level**
-- Severity: Low
-- Reproduction steps: `/practice?word=water` → answer Q5 ("Wasser bitte." → "水をください。") → check the feedback's romaji line.
-- Expected: Full-sentence romaji, e.g. `mizu o kudasai` (as Café Q4 shows for the same sentence in the Lesson flow).
-- Actual: Shows `mizu` (the single-word romaji from `VocabItem.romaji`), because `buildPhraseChoiceQuestion` in `src/lib/quizBuilder.ts` sets `answerRomaji: vocab.romaji` and `VocabItem` has no per-sentence romaji field to draw from instead.
-- Suggested fix: Either add an `exampleRomaji` field to `VocabItem` (in `src/types/learning.ts` + `src/lib/vocabData.ts`) and use it in `buildPhraseChoiceQuestion`, or omit the romaji line for dynamically-built phrase questions rather than showing a misleading word-level value.
+| # | Bug | Status | Verified fix |
+|---|---|---|---|
+| 1 | Locked lesson categories were reachable directly via URL (e.g. `/lesson?category=schule` before Reise was cleared), letting a user skip ahead of the intended progression and potentially trigger `recordCategoryCompletion` out of order | ✅ **Fixed** | `src/app/lesson/page.tsx` now checks `getCompletedCategories()` / `getUnlockedCategories()` (via a mounted `useEffect`, no hydration mismatch) before rendering the lesson; unauthorized access shows "Diese Kategorie ist noch gesperrt." with a "Zurück zur Karte" button and never reaches `LessonSession`/`recordCategoryCompletion`. Re-tested in this pass (§9). |
+| 2 | Word Practice phrase-choice feedback showed word-level romaji instead of sentence-level (e.g. `mizu` instead of `mizu o kudasai` for water Q5) | ✅ **Fixed** | `src/lib/quizBuilder.ts` now looks up sentence-level romaji for the 5 Café words instead of falling back to `vocab.romaji`; `getFeedbackPayload`'s phrase-choice branch no longer falls back to word-level romaji when a sentence-level value is absent (shows nothing instead of a misleading value). Re-tested for all 5 Café words plus a no-data word (`station`) in this pass (§9). |
 
-## 9. Polish Suggestions
+No new bugs were found during this re-QA pass.
 
-- Add a subtle "not unlocked yet" screen for Bug #1 above, reusing the existing "Diese Kategorie wurde nicht gefunden." pattern with different copy (e.g. "Diese Kategorie ist noch nicht freigeschaltet.").
+## 9. Regression Test Results
+
+| Regression check | Result |
+|---|---|
+| Locked lesson access fix (`/lesson?category=schule` before unlock) | ✅ PASS — lock screen shown, no questions rendered, `nvq_xp`/`nvq_completed_categories`/`nvq_collected_cards` unchanged |
+| Practice sentence romaji fix (water/coffee/bread/drink/eat) | ✅ PASS — all 5 show correct sentence-level romaji (`mizu o kudasai`, `koohii o kudasai`, `pan o kudasai`, `mizu o nomimasu`, `pan o tabemasu`); a word without romaji data (`station`) safely omits the romaji line instead of falling back to word-level romaji |
+| Hydration check (`/practice?word=water` and others, fresh loads) | ✅ PASS — no "Recoverable Error" / Hydration failed overlay observed on any tested route, confirmed via `nextjs-portal` shadow-root inspection |
+| Replay — no double XP grant | ✅ PASS — Café replay after first clear shows "Wiederholung abgeschlossen", XP +0, and `nvq_xp` stays at `"50"` |
+| Existing routes/flows unaffected | ✅ PASS — Onboarding, Home / Quest Map, Café → Reise unlock progression, Word Collection, and Review all verified working exactly as in the previous QA pass; no "Boss" or "Mastered" text found anywhere in `src` (case-insensitive grep) or in the browser |
+
+## 10. Polish Suggestions
+
 - Consider a small on-Home hint pointing first-time users toward "Wortkarten-Sammlung" / "Wiederholung" (currently they're plain buttons with no explanation of what they do).
 - The "Fortschritt" sidebar card could show the *next* reward (e.g. "+80 XP bei Reise") to reinforce forward motion.
 - Vocabulary cards are fairly information-dense (kanji, kana, romaji, german, 3 badges, example block, 3 example lists, tip) — on mobile this makes each card quite tall; a "show more" collapse for `commonExamples`/`commonPatterns`/`relatedExpressions` could tighten scanning once more categories are added.
 - Review's "Schon sicher" section uses small Badges with no interaction — a future iteration could make these clickable to jump back into practice for spaced review.
 - No progress indicator exists yet for "how many categories total remain" beyond the Quest Map itself; the Vocabulary page's "Nächste Kategorie" pill is a nice touch and could be mirrored more prominently elsewhere.
+- Sentence-level romaji in Word Practice is currently only mapped for the 5 Café words; extending the same lookup to Reise/Schule/Freunde vocabulary would make Word Practice feedback fully consistent across all categories.
 
-## 10. Recommendation
+## 11. Recommendation
 
-1. **Fix Bug #1 first** (locked-category URL bypass) — it's small, contained to `lesson/page.tsx`, and protects the core progression logic the rest of the app relies on.
-2. **Fix Bug #2** (phrase romaji) if a schema change (`exampleRomaji`) is acceptable at this stage; otherwise, simplest safe fix is to drop the misleading romaji rather than add a field, and revisit later.
-3. **UI polish pass** — apply the section 9 suggestions opportunistically; none are blocking for a first deploy.
-4. **Add more content** — Schule/Freunde/Abschluss-Review currently have minimal (5-question) placeholder-quality lesson data per APP_SPEC_V2's MVP scope; expanding vocab/example variety here is the next content milestone once the two bugs above are addressed.
-5. **GitHub / Vercel deploy** is reasonable once Bug #1 is fixed, since it's the only finding with real gameplay-integrity impact.
-6. **OpenAI / AI-Coach** and other "later" features remain correctly out of scope per APP_SPEC_V2 and were not touched.
+With both previously-found bugs fixed and no blockers remaining, the suggested next steps are:
+
+1. **UI polish** — apply the §10 suggestions opportunistically; none are blocking.
+2. **Content expansion** — Schule/Freunde/Abschluss-Review currently have minimal (5-question) placeholder-quality lesson data per APP_SPEC_V2's MVP scope, and sentence-level romaji in Word Practice only covers the 5 Café words; both are good next content milestones.
+3. **GitHub push** — the app is in a stable, bug-free state suitable for committing/pushing.
+4. **Vercel deploy** — reasonable once pushed, since no gameplay-integrity or build issues remain.
+5. **AI Coach / OpenAI integration** — remains correctly out of scope for MVP per APP_SPEC_V2 and should be picked up later, after the above.
