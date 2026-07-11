@@ -1,6 +1,21 @@
 import type { QuestCategory, QuizQuestion, VocabItem } from "@/types/learning";
 import { getVocabById, vocabData } from "@/lib/vocabData";
 
+/**
+ * Sentence-level romaji for each vocab item's `exampleJapanese`, keyed by vocab id.
+ * VocabItem only carries word-level romaji, which would misrepresent a full sentence
+ * (e.g. "mizu" instead of "mizu o kudasai") — so phrase-choice questions look this up
+ * instead of falling back to the word-level value. Words without an entry here simply
+ * omit answerRomaji rather than showing a misleading word-level romaji.
+ */
+const EXAMPLE_ROMAJI: Partial<Record<string, string>> = {
+  coffee: "koohii o kudasai",
+  water: "mizu o kudasai",
+  bread: "pan o kudasai",
+  drink: "mizu o nomimasu",
+  eat: "pan o tabemasu",
+};
+
 const PARTICLES = ["を", "に", "と", "で", "が", "は"];
 const PREDICATE_POOL = [
   "食べます",
@@ -145,7 +160,7 @@ function buildPhraseChoiceQuestion(vocab: VocabItem, pool: VocabItem[]): QuizQue
     answer: correct,
     vocabId: vocab.id,
     answerKana: vocab.exampleKana,
-    answerRomaji: vocab.romaji,
+    answerRomaji: EXAMPLE_ROMAJI[vocab.id],
     answerGerman: vocab.exampleGerman,
     exampleJapanese: vocab.exampleJapanese,
     exampleKana: vocab.exampleKana,
@@ -196,7 +211,10 @@ export function getFeedbackPayload(question: QuizQuestion): FeedbackPayload {
     return {
       answer: question.answer,
       kana: question.answerKana ?? vocab?.kana ?? "",
-      romaji: question.answerRomaji ?? vocab?.romaji ?? "",
+      // Word-level vocab.romaji would misrepresent a full sentence (e.g. "mizu" instead
+      // of "mizu o kudasai"), so an absent sentence-level romaji is shown as empty rather
+      // than falling back to it.
+      romaji: question.answerRomaji ?? "",
       german: question.answerGerman ?? vocab?.german ?? "",
       exampleJapanese: question.exampleJapanese ?? question.answer,
       exampleKana: question.exampleKana ?? question.answerKana ?? "",

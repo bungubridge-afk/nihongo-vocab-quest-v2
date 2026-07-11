@@ -1,11 +1,16 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge, Button, Card, FeedbackPanel } from "@/components/ui";
 import { getQuestCategory } from "@/lib/questData";
 import { buildLessonQuestions, getFeedbackPayload } from "@/lib/quizBuilder";
-import { getLevel, recordCategoryCompletion } from "@/lib/storage";
+import {
+  getCompletedCategories,
+  getLevel,
+  getUnlockedCategories,
+  recordCategoryCompletion,
+} from "@/lib/storage";
 import type { CategoryCompletionResult } from "@/lib/storage";
 import type { CategoryId, QuestCategory, QuizQuestion } from "@/types/learning";
 
@@ -48,19 +53,68 @@ function NotFoundView({ onHome }: { onHome: () => void }) {
   );
 }
 
+function LockedView({ onHome }: { onHome: () => void }) {
+  return (
+    <main className="flex flex-1 items-center justify-center px-4 py-10">
+      <Card className="w-full max-w-md text-center">
+        <p className="text-lg font-bold text-[var(--color-ink)]">
+          Diese Kategorie ist noch gesperrt.
+        </p>
+        <div className="mt-5">
+          <Button variant="primary" onClick={onHome}>
+            Zurück zur Karte
+          </Button>
+        </div>
+      </Card>
+    </main>
+  );
+}
+
+interface AccessState {
+  mounted: boolean;
+  allowed: boolean;
+}
+
+const INITIAL_ACCESS_STATE: AccessState = { mounted: false, allowed: false };
+
 function LessonContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const onHome = () => router.push("/");
 
   const rawCategoryId = searchParams.get("category") ?? "cafe";
   const categoryId: CategoryId | null = isValidCategoryId(rawCategoryId) ? rawCategoryId : null;
   const category: QuestCategory | undefined = categoryId ? getQuestCategory(categoryId) : undefined;
 
+  const [access, setAccess] = useState<AccessState>(INITIAL_ACCESS_STATE);
+
+  useEffect(() => {
+    // One-time client-only read of localStorage after hydration; there is no server
+    // snapshot to synchronize against, so useSyncExternalStore does not apply here.
+    if (!category) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAccess({ mounted: true, allowed: false });
+      return;
+    }
+    const completed = getCompletedCategories();
+    const unlocked = getUnlockedCategories();
+    const allowed = completed.includes(category.id) || unlocked.includes(category.id);
+    setAccess({ mounted: true, allowed });
+  }, [category]);
+
   if (!category) {
-    return <NotFoundView onHome={() => router.push("/")} />;
+    return <NotFoundView onHome={onHome} />;
   }
 
-  return <LessonSession category={category} onHome={() => router.push("/")} />;
+  if (!access.mounted) {
+    return <LoadingFallback />;
+  }
+
+  if (!access.allowed) {
+    return <LockedView onHome={onHome} />;
+  }
+
+  return <LessonSession category={category} onHome={onHome} />;
 }
 
 interface LessonSessionProps {
