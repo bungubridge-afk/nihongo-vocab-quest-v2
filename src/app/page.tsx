@@ -288,9 +288,17 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
               variant={nextUnlockLabel === "Abschluss-Review" ? "review" : "next"}
             />
           </div>
-          <Button variant="secondary" size="sm" onClick={onAdjustPlan}>
-            Lernplan anpassen
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" size="sm" onClick={() => router.push("/vocabulary")}>
+              Wortkarten-Sammlung
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => router.push("/review")}>
+              Wiederholung
+            </Button>
+            <Button variant="secondary" size="sm" onClick={onAdjustPlan}>
+              Lernplan anpassen
+            </Button>
+          </div>
         </div>
 
         <div className="mb-8 flex flex-wrap items-center gap-3">
