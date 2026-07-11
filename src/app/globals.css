@@ -1,8 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #eef4ff;
+  --foreground: #1b2340;
+
+  --color-ink: #1b2340;
+  --color-ink-soft: #55608a;
+
+  --color-primary: #2f9e5c;
+  --color-primary-dark: #237a45;
+  --color-primary-soft: #e3f6ea;
+  --color-primary-border: #bfe3cf;
+
+  --color-secondary: #ffffff;
+  --color-secondary-border: #dbe2f2;
+
+  --color-danger: #d9483d;
+  --color-danger-soft: #fbe8e6;
+  --color-danger-border: #f3c4bf;
+
+  --color-gold: #c98a1f;
+  --color-gold-soft: #fbf0d9;
+  --color-gold-border: #edd6a0;
+
+  --color-blue: #2f6fdb;
+  --color-blue-soft: #e5edfc;
+  --color-blue-border: #c7d9f5;
+
+  --color-locked: #8890a6;
+  --color-locked-bg: #eceff5;
+
+  --color-card-shadow: rgba(27, 35, 64, 0.1);
 }
 
 @theme inline {
@@ -12,15 +40,88 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  min-height: 100dvh;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, #eef4ff 0%, #f7f2ff 45%, #fef8ec 100%);
+  background-attachment: fixed;
+  color: var(--color-ink);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Quest Map: connecting line between stage nodes */
+.quest-map-line {
+  width: 4px;
+  background: linear-gradient(180deg, var(--color-primary-border), var(--color-secondary-border));
+  border-radius: 999px;
+}
+
+/* Quest Map: node states */
+.quest-node-current {
+  border-color: var(--color-primary);
+  box-shadow:
+    0 0 0 4px var(--color-primary-soft),
+    0 10px 20px -10px var(--color-card-shadow);
+}
+
+.quest-node-completed {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+}
+
+.quest-node-locked {
+  opacity: 0.6;
+  filter: grayscale(0.5);
+}
+
+/* Card surfaces */
+.soft-card {
+  background: var(--color-secondary);
+  border: 1px solid var(--color-secondary-border);
+  border-radius: 20px;
+  box-shadow: 0 8px 20px -14px var(--color-card-shadow);
+}
+
+.locked-card {
+  background: var(--color-locked-bg);
+  border: 1px solid var(--color-secondary-border);
+  color: var(--color-locked);
+}
+
+/* Answer feedback panel */
+.feedback-panel {
+  border-radius: 20px;
+  padding: 1.25rem;
+  border: 1px solid transparent;
+}
+
+/* Shared light "press" feel for tappable elements */
+.tap-scale {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.tap-scale:active {
+  transform: scale(0.96);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.18s ease-out;
 }
