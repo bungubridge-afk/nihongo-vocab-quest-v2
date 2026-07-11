@@ -13,18 +13,24 @@ const PREDICATE_POOL = [
   "勉強します",
 ];
 
-function shuffle<T>(items: T[]): T[] {
-  const array = [...items];
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+/**
+ * Deterministically reorders `items` based on `seed` (e.g. a vocab/question id).
+ * Used instead of Math.random-based shuffling so the order is identical on the
+ * server-rendered HTML and the client's first render, avoiding hydration mismatches.
+ */
+function orderDeterministically<T>(items: T[], seed: string): T[] {
+  if (items.length <= 1) return items;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
-  return array;
+  const offset = hash % items.length;
+  return [...items.slice(offset), ...items.slice(0, offset)];
 }
 
 function pickDistractors(values: string[], exclude: string, count: number): string[] {
   const unique = Array.from(new Set(values.filter((value) => value !== exclude)));
-  return shuffle(unique).slice(0, count);
+  return unique.slice(0, count);
 }
 
 function findParticle(sentence: string): { particle: string; index: number } | null {
@@ -46,7 +52,7 @@ function buildMeaningChoiceQuestion(vocab: VocabItem, pool: VocabItem[]): QuizQu
     categoryId: vocab.categoryId,
     prompt: vocab.kanji,
     instruction: "Wähle die richtige Bedeutung.",
-    choices: shuffle([vocab.german, ...distractors]),
+    choices: orderDeterministically([vocab.german, ...distractors], `${vocab.id}:meaning`),
     answer: vocab.german,
     vocabId: vocab.id,
   };
@@ -60,7 +66,7 @@ function buildJapaneseChoiceQuestion(vocab: VocabItem, pool: VocabItem[]): QuizQ
     categoryId: vocab.categoryId,
     prompt: vocab.german,
     instruction: "Wähle die passende Wortkarte.",
-    choices: shuffle([vocab.kanji, ...distractors]),
+    choices: orderDeterministically([vocab.kanji, ...distractors], `${vocab.id}:japanese`),
     answer: vocab.kanji,
     vocabId: vocab.id,
   };
@@ -94,7 +100,7 @@ function buildParticleChoiceQuestion(vocab: VocabItem): QuizQuestion {
     categoryId: vocab.categoryId,
     prompt: blanked,
     instruction: "Ergänze den Satz.",
-    choices: shuffle([particle, ...distractors]),
+    choices: orderDeterministically([particle, ...distractors], `${vocab.id}:particle`),
     answer: particle,
     vocabId: vocab.id,
   };
@@ -116,7 +122,7 @@ function buildFillBlankQuestion(vocab: VocabItem): QuizQuestion {
     categoryId: vocab.categoryId,
     prompt: blanked,
     instruction: "Ergänze den Satz.",
-    choices: shuffle([predicate, ...distractors]),
+    choices: orderDeterministically([predicate, ...distractors], `${vocab.id}:predicate`),
     answer: predicate,
     vocabId: vocab.id,
   };
@@ -135,7 +141,7 @@ function buildPhraseChoiceQuestion(vocab: VocabItem, pool: VocabItem[]): QuizQue
     categoryId: vocab.categoryId,
     prompt: vocab.exampleGerman,
     instruction: "Wähle den natürlichen japanischen Satz.",
-    choices: shuffle([correct, ...distractors]),
+    choices: orderDeterministically([correct, ...distractors], `${vocab.id}:phrase`),
     answer: correct,
     vocabId: vocab.id,
     answerKana: vocab.exampleKana,
