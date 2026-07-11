@@ -14,6 +14,17 @@ const EXAMPLE_ROMAJI: Partial<Record<string, string>> = {
   bread: "pan o kudasai",
   drink: "mizu o nomimasu",
   eat: "pan o tabemasu",
+  station: "eki wa doko desu ka",
+  hotel: "hoteru ni ikimasu",
+  train: "densha de ikimasu",
+  toilet: "toire wa doko desu ka",
+  go: "hoteru ni ikimasu",
+  where: "eki wa doko desu ka",
+  excuseMe: "sumimasen, eki wa doko desu ka",
+  right: "migi desu",
+  left: "hidari desu",
+  near: "eki wa chikai desu",
+  far: "hoteru wa tooi desu",
 };
 
 const PARTICLES = ["を", "に", "と", "で", "が", "は"];
