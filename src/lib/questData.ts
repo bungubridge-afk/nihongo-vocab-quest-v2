@@ -23,9 +23,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "コーヒーをください。",
         exampleKana: "コーヒーをください。",
         exampleGerman: "Einen Kaffee bitte.",
-        shortTip: "「ください」は注文やお願いで使える基本表現です。",
+        shortTip: "„Kudasai“ ist ein Grundausdruck für Bestellungen und Bitten.",
         detailTip:
-          "「コーヒーをください」は、カフェや店で使える丁寧なお願いです。カジュアルには「コーヒーください」と言うこともあります。",
+          "„コーヒーをください“ ist eine höfliche Bitte, die man im Café oder Geschäft benutzt. Im lockeren Ton sagt man auch einfach „コーヒーください“.",
       },
       {
         id: "cafe-q2",
@@ -73,9 +73,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "水をください。",
         exampleKana: "みずをください。",
         exampleGerman: "Wasser bitte.",
-        shortTip: "「〜をください」は注文やお願いで使えます。",
+        shortTip: "„〜をください“ benutzt man beim Bestellen oder Bitten.",
         detailTip:
-          "「水をください」は、店やレストランで使える実用表現です。「ください」は丁寧なお願いです。「水を飲みます」は「Ich trinke Wasser.」なので、注文の意味にはなりません。",
+          "„水をください“ ist ein nützlicher Ausdruck im Geschäft oder Restaurant. „ください“ ist eine höfliche Bitte. „水を飲みます“ bedeutet „Ich trinke Wasser“ und ist daher keine Bestellung.",
       },
       {
         id: "cafe-challenge",
@@ -98,9 +98,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "コーヒーとパンをください。",
         exampleKana: "コーヒーとパンをください。",
         exampleGerman: "Kaffee und Brot bitte.",
-        shortTip: "「AとB」は「A und B」です。",
+        shortTip: "„A と B“ bedeutet „A und B“.",
         detailTip:
-          "「と」は名詞をつなぐ時に使います。例: コーヒーとパン = Kaffee und Brot。「〜をください」を付けると、注文表現になります。",
+          "„と“ verbindet zwei Nomen. Beispiel: コーヒーとパン = Kaffee und Brot. Mit „〜をください“ wird daraus ein Bestellsatz.",
       },
     ],
   },
@@ -138,9 +138,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "駅はどこですか。",
         exampleKana: "えきはどこですか。",
         exampleGerman: "Wo ist der Bahnhof?",
-        shortTip: "「駅」は旅行中によく使う基本語彙です。",
+        shortTip: "„駅“ ist ein wichtiges Wort auf Reisen.",
         detailTip:
-          "「駅はどこですか」は、駅の場所を聞く自然な表現です。「どこですか」はドイツ語の「wo ist ...?」に近い意味です。",
+          "„駅はどこですか“ ist ein natürlicher Ausdruck, um nach dem Bahnhof zu fragen. „どこですか“ bedeutet „wo ist …?“.",
       },
       {
         id: "reise-q2",
@@ -154,9 +154,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "トイレはどこですか。",
         exampleKana: "トイレはどこですか。",
         exampleGerman: "Wo ist die Toilette?",
-        shortTip: "「トイレ」は日本語でもカタカナでよく使われます。",
+        shortTip: "„トイレ“ wird auf Japanisch oft in Katakana geschrieben.",
         detailTip:
-          "「トイレはどこですか」は、旅行中に非常に実用的な表現です。丁寧に聞くなら前に「すみません」を付けると自然です。",
+          "„トイレはどこですか“ ist sehr nützlich auf Reisen. Mit „すみません“ davor klingt die Frage noch höflicher.",
       },
       {
         id: "reise-q3",
@@ -170,9 +170,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "ホテルに行きます。",
         exampleKana: "ホテルにいきます。",
         exampleGerman: "Ich gehe zum Hotel.",
-        shortTip: "「〜に行きます」は「zu/nach ... gehen」に近い表現です。",
+        shortTip: "„〜に行きます“ bedeutet, dass man zu einem Ziel geht.",
         detailTip:
-          "「に」は行き先を示します。「ホテルに行きます」は、ホテルへ向かうことを表します。",
+          "„に“ zeigt das Ziel an. „ホテルに行きます“ bedeutet, dass man zum Hotel geht.",
       },
       {
         id: "reise-q4",
@@ -186,9 +186,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "電車で行きます。",
         exampleKana: "でんしゃでいきます。",
         exampleGerman: "Ich fahre mit dem Zug.",
-        shortTip: "「で」は交通手段を表すときに使えます。",
+        shortTip: "„で“ zeigt das Verkehrsmittel an.",
         detailTip:
-          "「電車で行きます」は「mit dem Zug fahren/gehen」に近い表現です。交通手段には「で」を使います。",
+          "„電車で行きます“ bedeutet „Ich fahre mit dem Zug“. Für Verkehrsmittel benutzt man „で“.",
       },
       {
         id: "reise-q5",
@@ -210,9 +210,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "駅はどこですか。",
         exampleKana: "えきはどこですか。",
         exampleGerman: "Wo ist der Bahnhof?",
-        shortTip: "「〜はどこですか」は場所を聞く基本表現です。",
+        shortTip: "„〜はどこですか“ ist ein Grundausdruck, um nach einem Ort zu fragen.",
         detailTip:
-          "「駅はどこですか」は、駅の場所を聞く自然な表現です。「は」は話題を示し、「どこですか」は「wo ist ...?」に近い意味です。",
+          "„駅はどこですか“ ist ein natürlicher Ausdruck, um nach dem Bahnhof zu fragen. „は“ markiert das Thema, „どこですか“ bedeutet „wo ist …?“.",
       },
       {
         id: "reise-q6",
@@ -226,9 +226,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "右です。",
         exampleKana: "みぎです。",
         exampleGerman: "Es ist rechts.",
-        shortTip: "「右」は Richtung の基本語彙です。",
+        shortTip: "„右“ ist ein Grundwort für Richtungen.",
         detailTip:
-          "「右です」は「Es ist rechts.」のように方向を短く答えるときに使えます。旅行中の道案内でよく出ます。",
+          "„右です“ bedeutet „Es ist rechts“ und ist eine kurze Antwort bei einer Wegbeschreibung. Das kommt oft bei Wegfragen auf Reisen vor.",
       },
       {
         id: "reise-q7",
@@ -242,9 +242,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "駅は近いです。",
         exampleKana: "えきはちかいです。",
         exampleGerman: "Der Bahnhof ist nah.",
-        shortTip: "「近いです」は「ist nah」に近い表現です。",
+        shortTip: "„近いです“ bedeutet, dass etwas nah ist.",
         detailTip:
-          "「駅は近いです」は、駅が近くにあることを表します。反対は「遠いです」です。",
+          "„駅は近いです“ bedeutet, dass der Bahnhof nah ist. Das Gegenteil ist „遠いです“.",
       },
       {
         id: "reise-q8",
@@ -266,9 +266,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "すみません、トイレはどこですか。",
         exampleKana: "すみません、トイレはどこですか。",
         exampleGerman: "Entschuldigung, wo ist die Toilette?",
-        shortTip: "「すみません」を前に付けると、丁寧に話しかけられます。",
+        shortTip: "„すみません“ am Satzanfang macht eine Frage höflicher.",
         detailTip:
-          "道を聞くときは、最初に「すみません」を付けると自然です。「トイレはどこですか」は場所を聞く表現です。",
+          "Bei einer Wegfrage benutzt man am Anfang oft „すみません“. „トイレはどこですか“ fragt nach einem Ort.",
       },
       {
         id: "reise-q9",
@@ -290,9 +290,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "ホテルは遠いです。",
         exampleKana: "ホテルはとおいです。",
         exampleGerman: "Das Hotel ist weit entfernt.",
-        shortTip: "「遠いです」は「weit entfernt」に近い表現です。",
+        shortTip: "„遠いです“ bedeutet, dass etwas weit entfernt ist.",
         detailTip:
-          "「ホテルは遠いです」は、ホテルが遠い場所にあることを表します。「近いです」は反対の意味です。",
+          "„ホテルは遠いです“ bedeutet, dass das Hotel weit entfernt ist. „近いです“ ist das Gegenteil.",
       },
       {
         id: "reise-challenge",
@@ -316,9 +316,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "電車でホテルに行きます。",
         exampleKana: "でんしゃでホテルにいきます。",
         exampleGerman: "Ich fahre mit dem Zug zum Hotel.",
-        shortTip: "「電車で」は交通手段、「ホテルに」は行き先を表します。",
+        shortTip: "„電車で“ zeigt das Verkehrsmittel, „ホテルに“ zeigt das Ziel.",
         detailTip:
-          "「電車でホテルに行きます」は、手段と行き先を一文で言う表現です。「で」は交通手段、「に」は行き先に使います。",
+          "„電車でホテルに行きます“ verbindet Verkehrsmittel und Ziel in einem Satz. „で“ steht für das Verkehrsmittel, „に“ für das Ziel.",
       },
     ],
   },
@@ -397,9 +397,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "今日、日本語を勉強します。",
         exampleKana: "きょう、にほんごをべんきょうします。",
         exampleGerman: "Ich lerne heute Japanisch.",
-        shortTip: "時を表す言葉は文の最初に置くと自然です。",
+        shortTip: "Zeitwörter stehen oft am Satzanfang.",
         detailTip:
-          "「今日」は文頭に置かれることが多い時間表現です。「今日、日本語を勉強します」は Ich lerne heute Japanisch. です。",
+          "„今日“ steht meistens am Satzanfang. „今日、日本語を勉強します“ bedeutet „Ich lerne heute Japanisch“.",
       },
       {
         id: "schule-challenge",
@@ -423,9 +423,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "今日、学校に行きます。日本語を勉強します。",
         exampleKana: "きょう、がっこうにいきます。にほんごをべんきょうします。",
         exampleGerman: "Heute gehe ich zur Schule und lerne Japanisch.",
-        shortTip: "2つの文をつなげるときは、単純に並べても大丈夫です。",
+        shortTip: "Zwei kurze Sätze kann man einfach hintereinander sagen.",
         detailTip:
-          "「今日、学校に行きます。日本語を勉強します。」のように、短い文を並べるだけでも自然な日本語になります。",
+          "„今日、学校に行きます。日本語を勉強します。“ klingt natürlich, auch wenn man die Sätze einfach aneinanderreiht.",
       },
     ],
   },
@@ -498,9 +498,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "明日、友だちに会います。",
         exampleKana: "あした、ともだちにあいます。",
         exampleGerman: "Morgen treffe ich einen Freund.",
-        shortTip: "「明日」は未来の予定を話すときに使います。",
+        shortTip: "„明日“ benutzt man für zukünftige Pläne.",
         detailTip:
-          "「明日、友だちに会います」は Morgen treffe ich einen Freund. です。「今日」との違いに注意しましょう。",
+          "„明日、友だちに会います“ bedeutet „Morgen treffe ich einen Freund“. Achte auf den Unterschied zu „今日“.",
       },
       {
         id: "freunde-challenge",
@@ -523,9 +523,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "友だちが好きです。明日、会います。",
         exampleKana: "ともだちがすきです。あした、あいます。",
         exampleGerman: "Ich mag meinen Freund. Morgen treffe ich ihn.",
-        shortTip: "「好き」の対象には「が」を使います。",
+        shortTip: "Bei „好き“ benutzt man „が“ für das, was man mag.",
         detailTip:
-          "「友だちが好きです」の「が」は好きの対象を表します。「明日、会います」で未来の予定を伝えます。",
+          "„が“ in „友だちが好きです“ zeigt, wen man mag. „明日、会います“ beschreibt einen zukünftigen Plan.",
       },
     ],
   },
@@ -621,9 +621,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "明日、学校に行きます。友だちに会います。",
         exampleKana: "あした、がっこうにいきます。ともだちにあいます。",
         exampleGerman: "Morgen gehe ich zur Schule und treffe einen Freund.",
-        shortTip: "このAbschluss-Reviewはすべてのカテゴリの単語を使います。",
+        shortTip: "Dieses Abschluss-Review kombiniert Wörter aus allen Kategorien.",
         detailTip:
-          "「明日、学校に行きます。友だちに会います。」は、Reise・Schule・Freundeの表現を組み合わせた文です。",
+          "„明日、学校に行きます。友だちに会います。“ verbindet Ausdrücke aus Reise, Schule und Freunde.",
       },
     ],
   },

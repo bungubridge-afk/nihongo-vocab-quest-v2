@@ -1,12 +1,26 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge, Button, Card, FeedbackPanel } from "@/components/ui";
 import { getVocabById } from "@/lib/vocabData";
 import { buildPracticeQuestions, getFeedbackPayload } from "@/lib/quizBuilder";
 import { getKnownWords, getWeakWords, setKnownWords, setWeakWords } from "@/lib/storage";
 import type { QuizQuestion, VocabItem } from "@/types/learning";
+
+/**
+ * Fisher-Yates shuffle. Must only ever be called from a client-side effect (never during
+ * render), since Math.random() would otherwise produce different output on the server and
+ * on the client's first render and trigger a hydration mismatch.
+ */
+function shuffleChoices<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
 
 export default function PracticePage() {
   return (
@@ -76,7 +90,21 @@ interface PracticeSessionProps {
 }
 
 function PracticeSession({ vocab, onBack }: PracticeSessionProps) {
-  const questions = useMemo(() => buildPracticeQuestions(vocab.id), [vocab.id]);
+  const baseQuestions = useMemo(() => buildPracticeQuestions(vocab.id), [vocab.id]);
+  const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[] | null>(null);
+
+  useEffect(() => {
+    // Choice order is randomized once per mount, entirely on the client, so the correct
+    // answer isn't always in the same position. Shuffling happens only here, after the
+    // initial render/hydration, so it cannot cause a hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShuffledQuestions(
+      baseQuestions.map((question) => ({
+        ...question,
+        choices: shuffleChoices(question.choices),
+      }))
+    );
+  }, [baseQuestions]);
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -85,6 +113,11 @@ function PracticeSession({ vocab, onBack }: PracticeSessionProps) {
   const [correctCount, setCorrectCount] = useState(0);
   const [showResult, setShowResult] = useState(false);
 
+  if (!shuffledQuestions) {
+    return <LoadingFallback />;
+  }
+
+  const questions = shuffledQuestions;
   const currentQuestion: QuizQuestion = questions[questionIndex];
   const isLastQuestion = questionIndex === questions.length - 1;
 

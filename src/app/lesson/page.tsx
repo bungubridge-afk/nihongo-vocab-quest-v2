@@ -20,6 +20,20 @@ function isValidCategoryId(value: string): value is CategoryId {
   return (VALID_CATEGORY_IDS as string[]).includes(value);
 }
 
+/**
+ * Fisher-Yates shuffle. Must only ever be called from a client-side effect (never during
+ * render), since Math.random() would otherwise produce different output on the server and
+ * on the client's first render and trigger a hydration mismatch.
+ */
+function shuffleChoices<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
 export default function LessonPage() {
   return (
     <Suspense fallback={<LoadingFallback />}>
@@ -123,7 +137,21 @@ interface LessonSessionProps {
 }
 
 function LessonSession({ category, onHome }: LessonSessionProps) {
-  const questions = useMemo(() => buildLessonQuestions(category), [category]);
+  const baseQuestions = useMemo(() => buildLessonQuestions(category), [category]);
+  const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[] | null>(null);
+
+  useEffect(() => {
+    // Choice order is randomized once per mount, entirely on the client, so the correct
+    // answer isn't always in the same position. This never runs during SSR/first render,
+    // so it cannot cause a hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShuffledQuestions(
+      baseQuestions.map((question) => ({
+        ...question,
+        choices: shuffleChoices(question.choices),
+      }))
+    );
+  }, [baseQuestions]);
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -137,6 +165,11 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
   );
   const [previousLevel, setPreviousLevel] = useState(0);
 
+  if (!shuffledQuestions) {
+    return <LoadingFallback />;
+  }
+
+  const questions = shuffledQuestions;
   const currentQuestion: QuizQuestion = questions[questionIndex];
   const isLastQuestion = questionIndex === questions.length - 1;
   const isChallengeQuestion = Boolean(currentQuestion?.isChallenge) || isLastQuestion;

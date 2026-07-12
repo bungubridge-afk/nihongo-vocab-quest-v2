@@ -23,9 +23,9 @@ export const vocabData: VocabItem[] = [
     ],
     commonPatterns: ["〜をください", "〜を飲みます"],
     relatedExpressions: ["アイスコーヒー", "ホットコーヒー", "コーヒーください"],
-    shortTip: "「ください」は注文やお願いで使える基本表現です。",
+    shortTip: "„Kudasai“ ist ein Grundausdruck für Bestellungen und Bitten.",
     detailTip:
-      "「コーヒーをください」は、カフェや店で使える丁寧なお願いです。カジュアルには「コーヒーください」と言うこともあります。",
+      "„コーヒーをください“ ist eine höfliche Bitte, die man im Café oder Geschäft benutzt. Im lockeren Ton sagt man auch einfach „コーヒーください“.",
   },
   {
     id: "water",
@@ -44,9 +44,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["水をください。", "水を飲みます。", "冷たい水をください。"],
     commonPatterns: ["〜をください", "〜を飲みます"],
     relatedExpressions: ["冷たい水", "水ください", "水を飲む"],
-    shortTip: "「〜をください」は注文やお願いで使えます。",
+    shortTip: "„〜をください“ benutzt man beim Bestellen oder Bitten.",
     detailTip:
-      "「水をください」は、店やレストランで使える実用表現です。「水を飲みます」は行動説明であり、注文ではありません。",
+      "„水をください“ ist ein nützlicher Ausdruck im Geschäft oder Restaurant. „水を飲みます“ beschreibt dagegen nur eine Handlung, keine Bestellung.",
   },
   {
     id: "bread",
@@ -65,9 +65,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["パンをください。", "パンを食べます。", "パンが好きです。"],
     commonPatterns: ["〜をください", "〜を食べます"],
     relatedExpressions: ["朝ごはん", "パンください", "パンを食べる"],
-    shortTip: "「パン」は日本語でもカタカナで使われます。",
+    shortTip: "„パン“ wird auf Japanisch auch in Katakana geschrieben.",
     detailTip:
-      "「パンをください」は店で使える注文表現です。「パンを食べます」は行動説明です。",
+      "„パンをください“ ist ein Bestellsatz im Geschäft. „パンを食べます“ beschreibt dagegen nur, dass man Brot isst.",
   },
   {
     id: "drink",
@@ -86,9 +86,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["水を飲みます。", "コーヒーを飲みます。", "お茶を飲みます。"],
     commonPatterns: ["〜を飲みます", "〜をください"],
     relatedExpressions: ["水を飲む", "コーヒーを飲む", "飲みます"],
-    shortTip: "「飲む」は Wasser, Kaffee, Tee などに使います。",
+    shortTip: "„飲む“ benutzt man für Wasser, Kaffee, Tee und andere Getränke.",
     detailTip:
-      "日本語では動詞が文の最後に置かれることが多いです。例: 水を + 飲みます。飲みます は丁寧な形です。",
+      "Im Japanischen steht das Verb meistens am Satzende, z. B. „水を + 飲みます“. „飲みます“ ist die höfliche Form.",
   },
   {
     id: "eat",
@@ -107,9 +107,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["パンを食べます。", "ごはんを食べます。", "朝ごはんを食べます。"],
     commonPatterns: ["〜を食べます", "ごはんを食べる"],
     relatedExpressions: ["パンを食べる", "朝ごはん", "食べます"],
-    shortTip: "「食べます」は食べ物に使います。",
+    shortTip: "„食べます“ benutzt man für Essen.",
     detailTip:
-      "「パンを食べます」は Ich esse Brot. です。「を」は食べる対象を示します。水やコーヒーには「飲みます」、パンやごはんには「食べます」を使います。",
+      "„パンを食べます“ bedeutet „Ich esse Brot“. „を“ markiert, was gegessen wird. Für Wasser oder Kaffee sagt man „飲みます“, für Brot oder Reis „食べます“.",
   },
 
   // --- Reise ---
@@ -130,9 +130,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["駅はどこですか。", "駅に行きます。"],
     commonPatterns: ["〜はどこですか", "〜に行きます"],
     relatedExpressions: ["駅まで", "駅の前"],
-    shortTip: "「どこですか」は場所を尋ねる基本表現です。",
+    shortTip: "„駅“ ist ein wichtiges Wort auf Reisen.",
     detailTip:
-      "「駅はどこですか」は道を尋ねるときの定番フレーズです。「〜はどこですか」は他の場所にも使えます。",
+      "„駅はどこですか“ ist ein natürlicher Ausdruck, um nach dem Bahnhof zu fragen. „どこですか“ bedeutet „wo ist …?“ und funktioniert auch für andere Orte.",
   },
   {
     id: "hotel",
@@ -151,9 +151,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["ホテルに行きます。", "ホテルはどこですか。"],
     commonPatterns: ["〜に行きます", "〜はどこですか"],
     relatedExpressions: ["ホテルの部屋", "ホテルまで"],
-    shortTip: "「ホテル」は外来語としてそのまま使われます。",
+    shortTip: "„ホテル“ wird als Fremdwort direkt übernommen.",
     detailTip:
-      "「ホテルに行きます」は Ich gehe zum Hotel. です。「ホテル」はドイツ語の Hotel と同じ意味で、旅行中によく使う単語です。",
+      "„ホテルに行きます“ bedeutet „Ich gehe zum Hotel“. „ホテル“ hat die gleiche Bedeutung wie im Deutschen und wird oft auf Reisen benutzt.",
   },
   {
     id: "train",
@@ -172,9 +172,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["電車で行きます。", "電車に乗ります。"],
     commonPatterns: ["〜で行きます", "〜に乗ります"],
     relatedExpressions: ["電車の中", "電車を降ります"],
-    shortTip: "「〜で行きます」は交通手段を表すときに使えます。",
+    shortTip: "„〜で行きます“ benutzt man, um ein Verkehrsmittel auszudrücken.",
     detailTip:
-      "「電車で行きます」は Ich fahre mit dem Zug. です。「で」は移動手段を表す助詞です。",
+      "„電車で行きます“ bedeutet „Ich fahre mit dem Zug“. „で“ zeigt hier das Verkehrsmittel an.",
   },
   {
     id: "toilet",
@@ -193,8 +193,8 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["トイレはどこですか。"],
     commonPatterns: ["〜はどこですか"],
     relatedExpressions: ["トイレを借ります"],
-    shortTip: "旅行中に一番よく使う質問のひとつです。",
-    detailTip: "「トイレはどこですか」は場所を尋ねる定番フレーズです。",
+    shortTip: "Diese Frage ist eine der nützlichsten auf Reisen.",
+    detailTip: "„トイレはどこですか“ ist ein Standardsatz, um nach der Toilette zu fragen.",
   },
   {
     id: "go",
@@ -213,9 +213,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["ホテルに行きます。", "駅に行きます。"],
     commonPatterns: ["〜に行きます"],
     relatedExpressions: ["行きます", "行く"],
-    shortTip: "「〜に行きます」は目的地を表す基本文型です。",
+    shortTip: "„〜に行きます“ zeigt ein Ziel an.",
     detailTip:
-      "「行く」は移動を表す動詞です。「ホテルに行きます」のように「〜に行きます」の形でよく使われます。",
+      "„行く“ ist ein Bewegungsverb. Wie in „ホテルに行きます“ wird es oft in der Form „〜に行きます“ benutzt.",
   },
   {
     id: "where",
@@ -234,9 +234,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["駅はどこですか。", "トイレはどこですか。", "ホテルはどこですか。"],
     commonPatterns: ["〜はどこですか"],
     relatedExpressions: ["どこですか", "どこ"],
-    shortTip: "「どこ」は場所を尋ねるときの基本語です。",
+    shortTip: "„どこ“ ist das Grundwort, um nach einem Ort zu fragen.",
     detailTip:
-      "「どこですか」はドイツ語の „wo ist …?“ に近い表現です。「〜はどこですか」の形で色々な場所を聞けます。",
+      "„どこですか“ bedeutet „wo ist …?“. Mit „〜はどこですか“ kann man nach verschiedenen Orten fragen.",
   },
   {
     id: "excuseMe",
@@ -255,9 +255,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["すみません、駅はどこですか。", "すみません、トイレはどこですか。"],
     commonPatterns: ["すみません、〜"],
     relatedExpressions: ["すみません"],
-    shortTip: "「すみません」は話しかけるときの丁寧な一言です。",
+    shortTip: "„すみません“ benutzt man, um jemanden höflich anzusprechen.",
     detailTip:
-      "「すみません」は „Entschuldigung“ に近く、道を尋ねる前に付けると丁寧になります。単独で謝罪の意味でも使えます。",
+      "„すみません“ bedeutet „Entschuldigung“ und macht eine Frage nach dem Weg höflicher. Man kann es auch allein als Entschuldigung benutzen.",
   },
   {
     id: "right",
@@ -276,9 +276,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["右です。", "右に行きます。"],
     commonPatterns: ["〜です", "右に〜"],
     relatedExpressions: ["右側", "右に曲がります"],
-    shortTip: "「右です」は方向を短く答える表現です。",
+    shortTip: "„右“ ist ein Grundwort für Richtungen.",
     detailTip:
-      "「右です」は „Es ist rechts.“ に近い表現です。道案内でよく使われる短い答え方です。",
+      "„右です“ bedeutet „Es ist rechts“ und ist eine kurze Antwort bei einer Wegbeschreibung.",
   },
   {
     id: "left",
@@ -297,9 +297,8 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["左です。", "左に行きます。"],
     commonPatterns: ["〜です", "左に〜"],
     relatedExpressions: ["左側", "左に曲がります"],
-    shortTip: "「左です」は方向を短く答える表現です。",
-    detailTip:
-      "「左です」は „Es ist links.“ に近い表現です。「右」と対になる基本の方向語です。",
+    shortTip: "„左です“ ist eine kurze Antwort für eine Richtung.",
+    detailTip: "„左です“ bedeutet „Es ist links“ und ist das Gegenteil von „右“.",
   },
   {
     id: "near",
@@ -318,9 +317,8 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["駅は近いです。", "ホテルは近いです。"],
     commonPatterns: ["〜は近いです"],
     relatedExpressions: ["近くに", "近い"],
-    shortTip: "「近いです」は距離が短いことを表します。",
-    detailTip:
-      "「駅は近いです」は „Der Bahnhof ist nah.“ です。反対の意味は「遠いです」です。",
+    shortTip: "„近いです“ bedeutet, dass etwas nah ist.",
+    detailTip: "„駅は近いです“ bedeutet „Der Bahnhof ist nah“. Das Gegenteil ist „遠いです“.",
   },
   {
     id: "far",
@@ -339,9 +337,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["ホテルは遠いです。", "駅は遠いです。"],
     commonPatterns: ["〜は遠いです"],
     relatedExpressions: ["遠くに", "遠い"],
-    shortTip: "「遠いです」は距離が長いことを表します。",
+    shortTip: "„遠いです“ bedeutet, dass etwas weit entfernt ist.",
     detailTip:
-      "「ホテルは遠いです」は „Das Hotel ist weit entfernt.“ です。「近い」の反対の意味です。",
+      "„ホテルは遠いです“ bedeutet „Das Hotel ist weit entfernt“. Das ist das Gegenteil von „近い“.",
   },
 
   // --- Schule ---
@@ -362,8 +360,8 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["学校に行きます。"],
     commonPatterns: ["〜に行きます"],
     relatedExpressions: ["学校の後で"],
-    shortTip: "「学校」は日常会話でよく出てくる基本単語です。",
-    detailTip: "「学校に行きます」は Ich gehe zur Schule. です。",
+    shortTip: "„学校“ ist ein Grundwort im Alltag.",
+    detailTip: "„学校に行きます“ bedeutet „Ich gehe zur Schule“.",
   },
   {
     id: "teacher",
@@ -382,9 +380,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["先生に聞きます。"],
     commonPatterns: ["〜に聞きます"],
     relatedExpressions: ["先生、質問があります"],
-    shortTip: "「先生」は学校でも他の職業でも敬称として使われます。",
+    shortTip: "„先生“ ist eine höfliche Anrede, nicht nur in der Schule.",
     detailTip:
-      "「先生」は teacher の意味以外にも、医者などにも使われる敬称です。",
+      "„先生“ wird nicht nur für Lehrer benutzt, sondern auch für Ärzte und andere Berufe als höfliche Anrede.",
   },
   {
     id: "japaneseLanguage",
@@ -403,8 +401,8 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["日本語を勉強します。"],
     commonPatterns: ["〜を勉強します"],
     relatedExpressions: ["日本語が好きです"],
-    shortTip: "「〜を勉強します」は学習内容を表す表現です。",
-    detailTip: "「日本語を勉強します」は Ich lerne Japanisch. です。",
+    shortTip: "„〜を勉強します“ zeigt an, was man lernt.",
+    detailTip: "„日本語を勉強します“ bedeutet „Ich lerne Japanisch“.",
   },
   {
     id: "study",
@@ -423,9 +421,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["日本語を勉強します。"],
     commonPatterns: ["〜を勉強します"],
     relatedExpressions: ["勉強します"],
-    shortTip: "「勉強する」は「する動詞」のひとつです。",
+    shortTip: "„勉強する“ ist ein „Suru-Verb“.",
     detailTip:
-      "「勉強する」は名詞「勉強」+「する」でできた動詞です。丁寧形は「勉強します」です。",
+      "„勉強する“ besteht aus dem Nomen „勉強“ und „する“. Die höfliche Form ist „勉強します“.",
   },
   {
     id: "today",
@@ -444,8 +442,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["今日、学校に行きます。"],
     commonPatterns: ["今日、〜"],
     relatedExpressions: ["今日は"],
-    shortTip: "「今日」は文の最初に置かれることが多いです。",
-    detailTip: "「今日」は heute の意味で、時を表す言葉として文頭で使われます。",
+    shortTip: "„今日“ steht meistens am Satzanfang.",
+    detailTip:
+      "„今日“ bedeutet „heute“ und wird als Zeitangabe oft an den Satzanfang gestellt.",
   },
 
   // --- Freunde ---
@@ -466,8 +465,8 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["友だちに会います。"],
     commonPatterns: ["〜に会います"],
     relatedExpressions: ["友だちと話す"],
-    shortTip: "「友だち」は日常会話で頻出の基本語です。",
-    detailTip: "「友だちに会います」は Ich treffe einen Freund. です。",
+    shortTip: "„友だち“ ist ein häufiges Wort im Alltag.",
+    detailTip: "„友だちに会います“ bedeutet „Ich treffe einen Freund“.",
   },
   {
     id: "meet",
@@ -486,9 +485,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["友だちに会います。"],
     commonPatterns: ["〜に会います"],
     relatedExpressions: ["会います"],
-    shortTip: "「会う」の対象には「に」を使います。",
+    shortTip: "Bei „会う“ benutzt man „に“ für die Person.",
     detailTip:
-      "「友だちに会います」のように、人と会う対象には助詞「に」を使います。",
+      "Wie in „友だちに会います“ benutzt man das Partikel „に“ für die Person, die man trifft.",
   },
   {
     id: "talk",
@@ -507,8 +506,8 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["友だちと話します。"],
     commonPatterns: ["〜と話します"],
     relatedExpressions: ["話します"],
-    shortTip: "「〜と話します」は誰かと一緒に話すときに使います。",
-    detailTip: "「友だちと話します」は Ich spreche mit einem Freund. です。",
+    shortTip: "„〜と話します“ benutzt man, wenn man mit jemandem spricht.",
+    detailTip: "„友だちと話します“ bedeutet „Ich spreche mit einem Freund“.",
   },
   {
     id: "tomorrow",
@@ -527,8 +526,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["明日、友だちに会います。"],
     commonPatterns: ["明日、〜"],
     relatedExpressions: ["明日は"],
-    shortTip: "「明日」は文頭で使われることが多い時間表現です。",
-    detailTip: "「明日」は morgen の意味で、未来の予定を話すときによく使います。",
+    shortTip: "„明日“ steht oft am Satzanfang.",
+    detailTip:
+      "„明日“ bedeutet „morgen“ und wird oft benutzt, wenn man über zukünftige Pläne spricht.",
   },
   {
     id: "like",
@@ -547,9 +547,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["友だちが好きです。"],
     commonPatterns: ["〜が好きです"],
     relatedExpressions: ["好きです"],
-    shortTip: "「好き」はな形容詞で、対象には「が」を使います。",
+    shortTip: "Bei „好き“ benutzt man „が“ für das, was man mag.",
     detailTip:
-      "「好き」は形容詞のように使われますが、活用はな形容詞タイプです。対象には助詞「が」を使います。",
+      "„好き“ wird wie ein Adjektiv benutzt, gehört aber zu den Na-Adjektiven. Für das, was man mag, benutzt man das Partikel „が“.",
   },
 ];
 
