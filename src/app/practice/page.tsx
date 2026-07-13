@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Badge, Button, Card, FeedbackPanel } from "@/components/ui";
 import { getVocabById } from "@/lib/vocabData";
 import { buildPracticeQuestions, getFeedbackPayload } from "@/lib/quizBuilder";
+import { playCorrectSound, playIncorrectSound } from "@/lib/sound";
 import {
   getCollectedCards,
   getKnownWords,
@@ -186,8 +187,14 @@ function PracticeSession({ vocab, onBack }: PracticeSessionProps) {
 
   function handleSelectChoice(choice: string) {
     if (answered) return;
+    const correct = choice === currentQuestion.answer;
+    if (correct) {
+      playCorrectSound();
+    } else {
+      playIncorrectSound();
+    }
     setSelectedAnswer(choice);
-    setIsCorrect(choice === currentQuestion.answer);
+    setIsCorrect(correct);
     setAnswered(true);
   }
 

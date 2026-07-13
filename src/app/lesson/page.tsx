@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Badge, Button, Card, FeedbackPanel } from "@/components/ui";
 import { getQuestCategory } from "@/lib/questData";
 import { buildLessonQuestions, getFeedbackPayload } from "@/lib/quizBuilder";
+import { playCorrectSound, playIncorrectSound } from "@/lib/sound";
 import {
   getCompletedCategories,
   getLevel,
@@ -176,8 +177,14 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
 
   function handleSelectChoice(choice: string) {
     if (answered) return;
+    const correct = choice === currentQuestion.answer;
+    if (correct) {
+      playCorrectSound();
+    } else {
+      playIncorrectSound();
+    }
     setSelectedAnswer(choice);
-    setIsCorrect(choice === currentQuestion.answer);
+    setIsCorrect(correct);
     setAnswered(true);
   }
 
