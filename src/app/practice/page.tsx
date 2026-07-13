@@ -251,7 +251,7 @@ function PracticeSession({ vocab, onBack }: PracticeSessionProps) {
           <Button variant="ghost" size="sm" onClick={onBack}>
             Zur Sammlung
           </Button>
-          <Badge variant="blue">Einzeltraining</Badge>
+          <Badge variant="blue">Sub Quest</Badge>
         </div>
 
         <div>
@@ -368,7 +368,7 @@ function PracticeResultView({
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card variant="highlight" className="w-full max-w-md text-center">
-        <p className="text-2xl font-extrabold text-[var(--color-ink)]">Karte geübt</p>
+        <p className="text-2xl font-extrabold text-[var(--color-ink)]">Sub Quest abgeschlossen</p>
         <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
           {vocab.kanji} · {vocab.german}
         </p>

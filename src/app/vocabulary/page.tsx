@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Badge, Button, Card } from "@/components/ui";
 import { vocabData } from "@/lib/vocabData";
 import { getQuestCategory } from "@/lib/questData";
+import { speakJapanese } from "@/lib/speech";
 import {
   getCollectedCards,
   getCompletedCategories,
@@ -288,15 +289,27 @@ function VocabCard({ vocab, status, onPractice }: VocabCardProps) {
         </>
       )}
 
-      <Button
-        variant={isHidden ? "locked" : "primary"}
-        size="sm"
-        disabled={isHidden}
-        onClick={onPractice}
-        className="mt-auto w-full"
-      >
-        Karte üben
-      </Button>
+      <div className="mt-auto flex flex-col gap-2">
+        {!isHidden ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => speakJapanese(vocab.kanji)}
+            className="w-full"
+          >
+            Anhören
+          </Button>
+        ) : null}
+        <Button
+          variant={isHidden ? "locked" : "primary"}
+          size="sm"
+          disabled={isHidden}
+          onClick={onPractice}
+          className="w-full"
+        >
+          Karte üben
+        </Button>
+      </div>
     </Card>
   );
 }

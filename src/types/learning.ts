@@ -4,6 +4,9 @@ export type QuestionType =
   | "fill-blank"
   | "particle-choice"
   | "phrase-choice"
+  | "sentence-meaning-choice"
+  | "mistake-choice"
+  | "kana-choice"
   | "typing"
   | "reorder";
 
