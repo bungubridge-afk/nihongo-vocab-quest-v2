@@ -1,11 +1,17 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge, Button, Card, FeedbackPanel } from "@/components/ui";
 import { getVocabById } from "@/lib/vocabData";
 import { buildPracticeQuestions, getFeedbackPayload } from "@/lib/quizBuilder";
-import { playCorrectSound, playIncorrectSound } from "@/lib/sound";
+import {
+  playCorrectSound,
+  playFailedResultSound,
+  playIncorrectSound,
+  playNormalResultSound,
+  playPerfectResultSound,
+} from "@/lib/sound";
 import {
   getCollectedCards,
   getKnownWords,
@@ -344,6 +350,21 @@ function PracticeResultView({
   onBack,
   onRetry,
 }: PracticeResultViewProps) {
+  const hasPlayedResultSoundRef = useRef(false);
+
+  useEffect(() => {
+    if (hasPlayedResultSoundRef.current) return;
+    hasPlayedResultSoundRef.current = true;
+    if (total <= 0) return;
+    if (correctCount === total) {
+      playPerfectResultSound();
+    } else if (correctCount === 0) {
+      playFailedResultSound();
+    } else {
+      playNormalResultSound();
+    }
+  }, [correctCount, total]);
+
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card variant="highlight" className="w-full max-w-md text-center">

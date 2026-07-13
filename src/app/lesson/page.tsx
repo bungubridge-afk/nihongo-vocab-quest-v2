@@ -1,11 +1,17 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge, Button, Card, FeedbackPanel } from "@/components/ui";
 import { getQuestCategory } from "@/lib/questData";
 import { buildLessonQuestions, getFeedbackPayload } from "@/lib/quizBuilder";
-import { playCorrectSound, playIncorrectSound } from "@/lib/sound";
+import {
+  playCorrectSound,
+  playFailedResultSound,
+  playIncorrectSound,
+  playNormalResultSound,
+  playPerfectResultSound,
+} from "@/lib/sound";
 import {
   getCompletedCategories,
   getLevel,
@@ -165,6 +171,7 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
     null
   );
   const [previousLevel, setPreviousLevel] = useState(0);
+  const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
 
   if (!shuffledQuestions) {
     return <LoadingFallback />;
@@ -189,7 +196,10 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
   }
 
   function handleNext() {
+    const updatedCorrectAnswersCount = correctAnswersCount + (isCorrect ? 1 : 0);
+
     if (isLastQuestion) {
+      setCorrectAnswersCount(updatedCorrectAnswersCount);
       if (isCorrect) {
         const levelBefore = getLevel();
         const result = recordCategoryCompletion(category);
@@ -204,6 +214,7 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
       return;
     }
 
+    setCorrectAnswersCount(updatedCorrectAnswersCount);
     setQuestionIndex((index) => index + 1);
     setSelectedAnswer(null);
     setAnswered(false);
@@ -218,6 +229,7 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
     setShowResult(false);
     setChallengeFailed(false);
     setCompletionResult(null);
+    setCorrectAnswersCount(0);
   }
 
   if (showResult) {
@@ -227,6 +239,8 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
         completionResult={completionResult}
         challengeFailed={challengeFailed}
         previousLevel={previousLevel}
+        correctCount={correctAnswersCount}
+        total={questions.length}
         onHome={onHome}
         onRetry={handleRetry}
       />
@@ -339,6 +353,8 @@ interface ResultViewProps {
   completionResult: CategoryCompletionResult | null;
   challengeFailed: boolean;
   previousLevel: number;
+  correctCount: number;
+  total: number;
   onHome: () => void;
   onRetry: () => void;
 }
@@ -348,9 +364,26 @@ function ResultView({
   completionResult,
   challengeFailed,
   previousLevel,
+  correctCount,
+  total,
   onHome,
   onRetry,
 }: ResultViewProps) {
+  const hasPlayedResultSoundRef = useRef(false);
+
+  useEffect(() => {
+    if (hasPlayedResultSoundRef.current) return;
+    hasPlayedResultSoundRef.current = true;
+    if (total <= 0) return;
+    if (correctCount === total) {
+      playPerfectResultSound();
+    } else if (correctCount === 0) {
+      playFailedResultSound();
+    } else {
+      playNormalResultSound();
+    }
+  }, [correctCount, total]);
+
   if (challengeFailed || !completionResult) {
     return (
       <main className="flex flex-1 items-center justify-center px-4 py-10">
