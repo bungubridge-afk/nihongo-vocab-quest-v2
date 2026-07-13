@@ -37,6 +37,8 @@ export interface VocabItem {
   relatedExpressions: string[];
   shortTip: string;
   detailTip: string;
+  /** Ids of other VocabItems that are thematically related, used to scope Word Practice distractors. */
+  relatedVocabIds?: string[];
 }
 
 export interface QuizQuestion {

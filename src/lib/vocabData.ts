@@ -26,6 +26,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„Kudasai“ ist ein Grundausdruck für Bestellungen und Bitten.",
     detailTip:
       "„コーヒーをください“ ist eine höfliche Bitte, die man im Café oder Geschäft benutzt. Im lockeren Ton sagt man auch einfach „コーヒーください“.",
+    relatedVocabIds: ["drink", "water", "bread"],
   },
   {
     id: "water",
@@ -47,6 +48,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„〜をください“ benutzt man beim Bestellen oder Bitten.",
     detailTip:
       "„水をください“ ist ein nützlicher Ausdruck im Geschäft oder Restaurant. „水を飲みます“ beschreibt dagegen nur eine Handlung, keine Bestellung.",
+    relatedVocabIds: ["drink", "coffee", "bread"],
   },
   {
     id: "bread",
@@ -68,6 +70,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„パン“ wird auf Japanisch auch in Katakana geschrieben.",
     detailTip:
       "„パンをください“ ist ein Bestellsatz im Geschäft. „パンを食べます“ beschreibt dagegen nur, dass man Brot isst.",
+    relatedVocabIds: ["eat", "coffee", "water"],
   },
   {
     id: "drink",
@@ -89,6 +92,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„飲む“ benutzt man für Wasser, Kaffee, Tee und andere Getränke.",
     detailTip:
       "Im Japanischen steht das Verb meistens am Satzende, z. B. „水を + 飲みます“. „飲みます“ ist die höfliche Form.",
+    relatedVocabIds: ["water", "coffee", "eat"],
   },
   {
     id: "eat",
@@ -110,6 +114,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„食べます“ benutzt man für Essen.",
     detailTip:
       "„パンを食べます“ bedeutet „Ich esse Brot“. „を“ markiert, was gegessen wird. Für Wasser oder Kaffee sagt man „飲みます“, für Brot oder Reis „食べます“.",
+    relatedVocabIds: ["bread", "drink", "coffee"],
   },
 
   // --- Reise ---
@@ -133,6 +138,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„駅“ ist ein wichtiges Wort auf Reisen.",
     detailTip:
       "„駅はどこですか“ ist ein natürlicher Ausdruck, um nach dem Bahnhof zu fragen. „どこですか“ bedeutet „wo ist …?“ und funktioniert auch für andere Orte.",
+    relatedVocabIds: ["where", "excuseMe", "train", "right", "left", "near", "far"],
   },
   {
     id: "hotel",
@@ -154,6 +160,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„ホテル“ wird als Fremdwort direkt übernommen.",
     detailTip:
       "„ホテルに行きます“ bedeutet „Ich gehe zum Hotel“. „ホテル“ hat die gleiche Bedeutung wie im Deutschen und wird oft auf Reisen benutzt.",
+    relatedVocabIds: ["go", "train", "where", "near", "far"],
   },
   {
     id: "train",
@@ -175,6 +182,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„〜で行きます“ benutzt man, um ein Verkehrsmittel auszudrücken.",
     detailTip:
       "„電車で行きます“ bedeutet „Ich fahre mit dem Zug“. „で“ zeigt hier das Verkehrsmittel an.",
+    relatedVocabIds: ["go", "station", "hotel"],
   },
   {
     id: "toilet",
@@ -195,6 +203,7 @@ export const vocabData: VocabItem[] = [
     relatedExpressions: ["トイレを借ります"],
     shortTip: "Diese Frage ist eine der nützlichsten auf Reisen.",
     detailTip: "„トイレはどこですか“ ist ein Standardsatz, um nach der Toilette zu fragen.",
+    relatedVocabIds: ["where", "excuseMe", "station"],
   },
   {
     id: "go",
@@ -216,6 +225,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„〜に行きます“ zeigt ein Ziel an.",
     detailTip:
       "„行く“ ist ein Bewegungsverb. Wie in „ホテルに行きます“ wird es oft in der Form „〜に行きます“ benutzt.",
+    relatedVocabIds: ["hotel", "station", "train"],
   },
   {
     id: "where",
@@ -237,6 +247,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„どこ“ ist das Grundwort, um nach einem Ort zu fragen.",
     detailTip:
       "„どこですか“ bedeutet „wo ist …?“. Mit „〜はどこですか“ kann man nach verschiedenen Orten fragen.",
+    relatedVocabIds: ["station", "toilet", "hotel", "excuseMe"],
   },
   {
     id: "excuseMe",
@@ -258,6 +269,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„すみません“ benutzt man, um jemanden höflich anzusprechen.",
     detailTip:
       "„すみません“ bedeutet „Entschuldigung“ und macht eine Frage nach dem Weg höflicher. Man kann es auch allein als Entschuldigung benutzen.",
+    relatedVocabIds: ["where", "toilet", "station"],
   },
   {
     id: "right",
@@ -279,6 +291,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„右“ ist ein Grundwort für Richtungen.",
     detailTip:
       "„右です“ bedeutet „Es ist rechts“ und ist eine kurze Antwort bei einer Wegbeschreibung.",
+    relatedVocabIds: ["left", "near", "far", "station"],
   },
   {
     id: "left",
@@ -299,6 +312,7 @@ export const vocabData: VocabItem[] = [
     relatedExpressions: ["左側", "左に曲がります"],
     shortTip: "„左です“ ist eine kurze Antwort für eine Richtung.",
     detailTip: "„左です“ bedeutet „Es ist links“ und ist das Gegenteil von „右“.",
+    relatedVocabIds: ["right", "near", "far", "station"],
   },
   {
     id: "near",
@@ -319,6 +333,7 @@ export const vocabData: VocabItem[] = [
     relatedExpressions: ["近くに", "近い"],
     shortTip: "„近いです“ bedeutet, dass etwas nah ist.",
     detailTip: "„駅は近いです“ bedeutet „Der Bahnhof ist nah“. Das Gegenteil ist „遠いです“.",
+    relatedVocabIds: ["far", "right", "left", "station", "hotel"],
   },
   {
     id: "far",
@@ -340,6 +355,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„遠いです“ bedeutet, dass etwas weit entfernt ist.",
     detailTip:
       "„ホテルは遠いです“ bedeutet „Das Hotel ist weit entfernt“. Das ist das Gegenteil von „近い“.",
+    relatedVocabIds: ["near", "right", "left", "station", "hotel"],
   },
 
   // --- Schule ---
@@ -362,6 +378,7 @@ export const vocabData: VocabItem[] = [
     relatedExpressions: ["学校の後で"],
     shortTip: "„学校“ ist ein Grundwort im Alltag.",
     detailTip: "„学校に行きます“ bedeutet „Ich gehe zur Schule“.",
+    relatedVocabIds: ["teacher", "study", "today", "japaneseLanguage"],
   },
   {
     id: "teacher",
@@ -383,6 +400,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„先生“ ist eine höfliche Anrede, nicht nur in der Schule.",
     detailTip:
       "„先生“ wird nicht nur für Lehrer benutzt, sondern auch für Ärzte und andere Berufe als höfliche Anrede.",
+    relatedVocabIds: ["school", "study", "japaneseLanguage"],
   },
   {
     id: "japaneseLanguage",
@@ -403,6 +421,7 @@ export const vocabData: VocabItem[] = [
     relatedExpressions: ["日本語が好きです"],
     shortTip: "„〜を勉強します“ zeigt an, was man lernt.",
     detailTip: "„日本語を勉強します“ bedeutet „Ich lerne Japanisch“.",
+    relatedVocabIds: ["study", "school", "teacher", "today"],
   },
   {
     id: "study",
@@ -424,6 +443,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„勉強する“ ist ein „Suru-Verb“.",
     detailTip:
       "„勉強する“ besteht aus dem Nomen „勉強“ und „する“. Die höfliche Form ist „勉強します“.",
+    relatedVocabIds: ["japaneseLanguage", "school", "teacher", "today"],
   },
   {
     id: "today",
@@ -445,6 +465,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„今日“ steht meistens am Satzanfang.",
     detailTip:
       "„今日“ bedeutet „heute“ und wird als Zeitangabe oft an den Satzanfang gestellt.",
+    relatedVocabIds: ["study", "school", "japaneseLanguage"],
   },
 
   // --- Freunde ---
@@ -467,6 +488,7 @@ export const vocabData: VocabItem[] = [
     relatedExpressions: ["友だちと話す"],
     shortTip: "„友だち“ ist ein häufiges Wort im Alltag.",
     detailTip: "„友だちに会います“ bedeutet „Ich treffe einen Freund“.",
+    relatedVocabIds: ["meet", "talk", "tomorrow", "like"],
   },
   {
     id: "meet",
@@ -488,6 +510,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "Bei „会う“ benutzt man „に“ für die Person.",
     detailTip:
       "Wie in „友だちに会います“ benutzt man das Partikel „に“ für die Person, die man trifft.",
+    relatedVocabIds: ["friend", "talk", "tomorrow"],
   },
   {
     id: "talk",
@@ -508,6 +531,7 @@ export const vocabData: VocabItem[] = [
     relatedExpressions: ["話します"],
     shortTip: "„〜と話します“ benutzt man, wenn man mit jemandem spricht.",
     detailTip: "„友だちと話します“ bedeutet „Ich spreche mit einem Freund“.",
+    relatedVocabIds: ["friend", "meet", "like"],
   },
   {
     id: "tomorrow",
@@ -529,6 +553,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "„明日“ steht oft am Satzanfang.",
     detailTip:
       "„明日“ bedeutet „morgen“ und wird oft benutzt, wenn man über zukünftige Pläne spricht.",
+    relatedVocabIds: ["meet", "friend", "like"],
   },
   {
     id: "like",
@@ -550,6 +575,7 @@ export const vocabData: VocabItem[] = [
     shortTip: "Bei „好き“ benutzt man „が“ für das, was man mag.",
     detailTip:
       "„好き“ wird wie ein Adjektiv benutzt, gehört aber zu den Na-Adjektiven. Für das, was man mag, benutzt man das Partikel „が“.",
+    relatedVocabIds: ["friend", "talk", "tomorrow"],
   },
 ];
 

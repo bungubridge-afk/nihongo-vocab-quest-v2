@@ -89,13 +89,6 @@ function getCardStatus(vocab: VocabItem, progress: ProgressSnapshot): CardStatus
   return "locked";
 }
 
-function getPrecedingCategoryName(categoryId: CategoryId): string | null {
-  const index = VOCAB_CATEGORY_ORDER.indexOf(categoryId);
-  if (index <= 0) return null;
-  const previous = getQuestCategory(VOCAB_CATEGORY_ORDER[index - 1]);
-  return previous ? previous.name : null;
-}
-
 function getNextCollectibleCategoryLabel(unlockedCategories: CategoryId[]): string {
   const next = VOCAB_CATEGORY_ORDER.find((id) => !unlockedCategories.includes(id));
   if (!next) return "Alle freigeschaltet";
@@ -224,10 +217,12 @@ interface VocabCardProps {
 
 function VocabCard({ vocab, status, onPractice }: VocabCardProps) {
   const isLocked = status === "locked";
+  const isSammelbar = status === "sammelbar";
+  const isHidden = isLocked || isSammelbar;
   const category = getQuestCategory(vocab.categoryId);
 
   return (
-    <Card variant={isLocked ? "locked" : "default"} className="flex flex-col gap-3">
+    <Card variant={isHidden ? "locked" : "default"} className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={STATUS_BADGE_VARIANT[status]}>{STATUS_LABEL[status]}</Badge>
         {category ? <Badge variant="gray">{category.name}</Badge> : null}
@@ -237,27 +232,31 @@ function VocabCard({ vocab, status, onPractice }: VocabCardProps) {
       <div>
         <p
           className={
-            isLocked
+            isHidden
               ? "text-2xl font-extrabold text-[var(--color-locked)]"
               : "text-2xl font-extrabold text-[var(--color-ink)]"
           }
         >
-          {isLocked ? "???" : vocab.kanji}
+          {isHidden ? "???" : vocab.kanji}
         </p>
-        {isLocked ? (
-          <p className="text-sm text-[var(--color-locked)]">{vocab.german}</p>
-        ) : (
+        {!isHidden ? (
           <p className="text-sm text-[var(--color-ink-soft)]">
             {vocab.kana} · {vocab.romaji} · {vocab.german}
           </p>
-        )}
+        ) : null}
       </div>
 
       {isLocked ? (
         <p className="text-sm font-semibold text-[var(--color-locked)]">
-          {getPrecedingCategoryName(vocab.categoryId)
-            ? `Freigeschaltet nach ${getPrecedingCategoryName(vocab.categoryId)}`
-            : "Freigeschaltet später"}
+          Noch gesperrt.
+          <br />
+          Wird später freigeschaltet.
+        </p>
+      ) : isSammelbar ? (
+        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
+          Noch nicht gesammelt.
+          <br />
+          Schließe diese Lektion ab, um die Karte zu sammeln.
         </p>
       ) : (
         <>
@@ -290,9 +289,9 @@ function VocabCard({ vocab, status, onPractice }: VocabCardProps) {
       )}
 
       <Button
-        variant={isLocked ? "locked" : "primary"}
+        variant={isHidden ? "locked" : "primary"}
         size="sm"
-        disabled={isLocked}
+        disabled={isHidden}
         onClick={onPractice}
         className="mt-auto w-full"
       >

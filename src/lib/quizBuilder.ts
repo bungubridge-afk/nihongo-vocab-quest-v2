@@ -186,12 +186,47 @@ export function buildLessonQuestions(category: QuestCategory): QuizQuestion[] {
   return [...category.questions];
 }
 
+/**
+ * Builds the distractor pool for a practice word: related words first (per
+ * `relatedVocabIds`), then other words from the same category, then the rest of vocabData
+ * as a last resort. Keeps distractors thematically close instead of pulling in unrelated
+ * categories (e.g. picking "school"/"friend" as distractors for "water").
+ *
+ * Every tier is added in full (not capped) so that downstream per-question filtering — e.g.
+ * phrase-choice deduplicating identical exampleJapanese sentences — always has enough
+ * candidates left to still produce 3 distractors.
+ */
+function buildRelatedPool(vocab: VocabItem): VocabItem[] {
+  const pool: VocabItem[] = [];
+  const seen = new Set<string>([vocab.id]);
+
+  function addCandidates(candidates: VocabItem[]) {
+    for (const candidate of candidates) {
+      if (seen.has(candidate.id)) continue;
+      seen.add(candidate.id);
+      pool.push(candidate);
+    }
+  }
+
+  const related = (vocab.relatedVocabIds ?? [])
+    .map((id) => getVocabById(id))
+    .filter((item): item is VocabItem => Boolean(item));
+  addCandidates(related);
+
+  const sameCategory = vocabData.filter((item) => item.categoryId === vocab.categoryId);
+  addCandidates(sameCategory);
+
+  addCandidates(vocabData);
+
+  return pool;
+}
+
 /** Builds 5 questions scoped entirely to a single vocab item — no other word's meaning is ever tested. */
 export function buildPracticeQuestions(vocabId: string): QuizQuestion[] {
   const vocab = getVocabById(vocabId);
   if (!vocab) return [];
 
-  const pool = vocabData.filter((item) => item.id !== vocab.id);
+  const pool = buildRelatedPool(vocab);
 
   return [
     buildMeaningChoiceQuestion(vocab, pool),
