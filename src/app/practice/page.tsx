@@ -5,7 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Badge, Button, Card, FeedbackPanel } from "@/components/ui";
 import { getVocabById } from "@/lib/vocabData";
 import { buildPracticeQuestions, getFeedbackPayload } from "@/lib/quizBuilder";
-import { getKnownWords, getWeakWords, setKnownWords, setWeakWords } from "@/lib/storage";
+import {
+  getCollectedCards,
+  getKnownWords,
+  getWeakWords,
+  setKnownWords,
+  setWeakWords,
+} from "@/lib/storage";
 import type { QuizQuestion, VocabItem } from "@/types/learning";
 
 /**
@@ -53,16 +59,73 @@ function NotFoundView({ onBack }: { onBack: () => void }) {
   );
 }
 
+function NotCollectedView({ onBack, onHome }: { onBack: () => void; onHome: () => void }) {
+  return (
+    <main className="flex flex-1 items-center justify-center px-4 py-10">
+      <Card variant="locked" className="w-full max-w-md text-center">
+        <p className="text-lg font-bold text-[var(--color-ink)]">
+          Diese Karte wurde noch nicht gesammelt.
+        </p>
+        <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
+          Schließe zuerst die passende Lektion ab, um diese Karte zu üben.
+        </p>
+        <div className="mt-5 flex flex-col gap-3">
+          <Button variant="primary" onClick={onBack}>
+            Zur Wortkarten-Sammlung
+          </Button>
+          <Button variant="secondary" onClick={onHome}>
+            Zur Karte
+          </Button>
+        </div>
+      </Card>
+    </main>
+  );
+}
+
+interface AccessState {
+  mounted: boolean;
+  allowed: boolean;
+}
+
+const INITIAL_ACCESS_STATE: AccessState = { mounted: false, allowed: false };
+
 function PracticeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const onBack = () => router.push("/vocabulary");
+  const onHome = () => router.push("/");
 
   const wordId = searchParams.get("word");
   const vocab: VocabItem | undefined = wordId ? getVocabById(wordId) : undefined;
 
+  const [access, setAccess] = useState<AccessState>(INITIAL_ACCESS_STATE);
+
+  useEffect(() => {
+    // One-time client-only read of localStorage after hydration; there is no server
+    // snapshot to synchronize against, so useSyncExternalStore does not apply here.
+    if (!vocab) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAccess({ mounted: true, allowed: false });
+      return;
+    }
+    const collected = getCollectedCards();
+    const known = getKnownWords();
+    const weak = getWeakWords();
+    const allowed =
+      collected.includes(vocab.id) || known.includes(vocab.id) || weak.includes(vocab.id);
+    setAccess({ mounted: true, allowed });
+  }, [vocab]);
+
   if (!wordId || !vocab) {
     return <NotFoundView onBack={onBack} />;
+  }
+
+  if (!access.mounted) {
+    return <LoadingFallback />;
+  }
+
+  if (!access.allowed) {
+    return <NotCollectedView onBack={onBack} onHome={onHome} />;
   }
 
   return <PracticeSession vocab={vocab} onBack={onBack} />;
