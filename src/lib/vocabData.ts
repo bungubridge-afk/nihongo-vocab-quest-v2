@@ -23,9 +23,9 @@ export const vocabData: VocabItem[] = [
     ],
     commonPatterns: ["〜をください", "〜を飲みます"],
     relatedExpressions: ["アイスコーヒー", "ホットコーヒー", "コーヒーください"],
-    shortTip: "„Kudasai“ ist ein Grundausdruck für Bestellungen und Bitten.",
+    shortTip: "„コーヒーをください“ ist dein Standardsatz, um einen Kaffee zu bestellen.",
     detailTip:
-      "„コーヒーをください“ ist eine höfliche Bitte, die man im Café oder Geschäft benutzt. Im lockeren Ton sagt man auch einfach „コーヒーください“.",
+      "Im Café sagst du einfach [Ding] + „をください“ – das ist die sichere Bestellform, egal was du willst. „コーヒーをください“ heißt „Einen Kaffee bitte“. Kurz und locker geht auch „コーヒーください“. Merk dir „ください“ als dein Zauberwort zum Bestellen.",
     relatedVocabIds: ["drink", "water", "bread"],
   },
   {
@@ -45,9 +45,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["水をください。", "水を飲みます。", "冷たい水をください。"],
     commonPatterns: ["〜をください", "〜を飲みます"],
     relatedExpressions: ["冷たい水", "水ください", "水を飲む"],
-    shortTip: "„〜をください“ benutzt man beim Bestellen oder Bitten.",
+    shortTip: "„〜をください“ ist dein sicherer Standardsatz zum Bestellen.",
     detailTip:
-      "„水をください“ ist ein nützlicher Ausdruck im Geschäft oder Restaurant. „水を飲みます“ beschreibt dagegen nur eine Handlung, keine Bestellung.",
+      "Wenn du in Japan etwas bestellen willst, ist „〜をください“ die einfachste sichere Form. Setze einfach das Ding davor: 水をください = Wasser bitte. Das klingt höflich genug für Cafés und Läden. Nicht verwechseln: „水を飲みます“ heißt „Ich trinke Wasser“, nicht „Wasser bitte“ – das eine ist eine Bestellung, das andere eine Beschreibung.",
     relatedVocabIds: ["drink", "coffee", "bread"],
   },
   {
@@ -67,9 +67,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["パンをください。", "パンを食べます。", "パンが好きです。"],
     commonPatterns: ["〜をください", "〜を食べます"],
     relatedExpressions: ["朝ごはん", "パンください", "パンを食べる"],
-    shortTip: "„パン“ wird auf Japanisch auch in Katakana geschrieben.",
+    shortTip: "„パン“ klingt fast wie das deutsche Wort – und bedeutet genau dasselbe.",
     detailTip:
-      "„パンをください“ ist ein Bestellsatz im Geschäft. „パンを食べます“ beschreibt dagegen nur, dass man Brot isst.",
+      "„パン“ kommt ursprünglich aus dem Portugiesischen und wird ähnlich wie im Deutschen ausgesprochen, daher leicht zu merken. „パンをください“ bestellt Brot, „パンを食べます“ beschreibt nur, dass du Brot isst. Das „を“ zeigt jeweils, worum es geht. Achte auf den Unterschied: Bestellung vs. Handlung.",
     relatedVocabIds: ["eat", "coffee", "water"],
   },
   {
@@ -89,9 +89,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["水を飲みます。", "コーヒーを飲みます。", "お茶を飲みます。"],
     commonPatterns: ["〜を飲みます", "〜をください"],
     relatedExpressions: ["水を飲む", "コーヒーを飲む", "飲みます"],
-    shortTip: "„飲む“ benutzt man für Wasser, Kaffee, Tee und andere Getränke.",
+    shortTip: "„飲みます“ benutzt du für alles, was du trinkst – Wasser, Kaffee, Tee.",
     detailTip:
-      "Im Japanischen steht das Verb meistens am Satzende, z. B. „水を + 飲みます“. „飲みます“ ist die höfliche Form.",
+      "„飲む“ ist das Verb für „trinken“, höflich „飲みます“. Das Muster ist immer gleich: [Getränk] + を + 飲みます, z. B. 水を飲みます = Ich trinke Wasser. Anders als im Deutschen steht das Verb im Japanischen immer am Satzende. Verwechsle es nicht mit „食べます“ – das ist für Essen, nicht für Getränke.",
     relatedVocabIds: ["water", "coffee", "eat"],
   },
   {
@@ -111,9 +111,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["パンを食べます。", "ごはんを食べます。", "朝ごはんを食べます。"],
     commonPatterns: ["〜を食べます", "ごはんを食べる"],
     relatedExpressions: ["パンを食べる", "朝ごはん", "食べます"],
-    shortTip: "„食べます“ benutzt man für Essen.",
+    shortTip: "„食べます“ ist dein Verb für alles, was du isst.",
     detailTip:
-      "„パンを食べます“ bedeutet „Ich esse Brot“. „を“ markiert, was gegessen wird. Für Wasser oder Kaffee sagt man „飲みます“, für Brot oder Reis „食べます“.",
+      "„食べる“ heißt „essen“, höflich „食べます“. Das Muster [Essen] + を + 食べます funktioniert immer: パンを食べます = Ich esse Brot. Getränke bekommen „飲みます“, feste Nahrung „食べます“ – eine der ersten Unterscheidungen, die Anfänger lernen. Merk dir: „を“ zeigt das Objekt, das Verb kommt zuletzt.",
     relatedVocabIds: ["bread", "drink", "coffee"],
   },
 
@@ -135,9 +135,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["駅はどこですか。", "駅に行きます。"],
     commonPatterns: ["〜はどこですか", "〜に行きます"],
     relatedExpressions: ["駅まで", "駅の前"],
-    shortTip: "„駅“ ist ein wichtiges Wort auf Reisen.",
+    shortTip: "„駅はどこですか“ ist deine Rettung, wenn du den Bahnhof suchst.",
     detailTip:
-      "„駅はどこですか“ ist ein natürlicher Ausdruck, um nach dem Bahnhof zu fragen. „どこですか“ bedeutet „wo ist …?“ und funktioniert auch für andere Orte.",
+      "„駅“ heißt „Bahnhof“ und ist eines der wichtigsten Reisewörter überhaupt. Das Muster „〜はどこですか“ bedeutet „Wo ist …?“ und funktioniert für jeden Ort: ホテルはどこですか, トイレはどこですか. Ein häufiger Fehler ist, das „は“ wegzulassen – ohne „は“ klingt der Satz unvollständig. Mit diesem einen Muster findest du fast alles.",
     relatedVocabIds: ["where", "excuseMe", "train", "right", "left", "near", "far"],
   },
   {
@@ -157,9 +157,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["ホテルに行きます。", "ホテルはどこですか。"],
     commonPatterns: ["〜に行きます", "〜はどこですか"],
     relatedExpressions: ["ホテルの部屋", "ホテルまで"],
-    shortTip: "„ホテル“ wird als Fremdwort direkt übernommen.",
+    shortTip: "„ホテル“ ist ein Fremdwort – klingt fast wie im Deutschen.",
     detailTip:
-      "„ホテルに行きます“ bedeutet „Ich gehe zum Hotel“. „ホテル“ hat die gleiche Bedeutung wie im Deutschen und wird oft auf Reisen benutzt.",
+      "„ホテル“ kommt aus dem Englischen und wird genauso benutzt wie im Deutschen, deshalb ist es leicht zu merken. „ホテルに行きます“ heißt „Ich gehe zum Hotel“ – „に“ markiert hier das Ziel. Ein typischer Fehler ist, „で“ statt „に“ zu benutzen; „で“ ist für das Verkehrsmittel, nicht das Ziel. Merk dir das Paar: 電車で (womit) + ホテルに (wohin).",
     relatedVocabIds: ["go", "train", "where", "near", "far"],
   },
   {
@@ -179,9 +179,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["電車で行きます。", "電車に乗ります。"],
     commonPatterns: ["〜で行きます", "〜に乗ります"],
     relatedExpressions: ["電車の中", "電車を降ります"],
-    shortTip: "„〜で行きます“ benutzt man, um ein Verkehrsmittel auszudrücken.",
+    shortTip: "„で“ zeigt hier, womit du dich bewegst: Zug, Bus oder Auto.",
     detailTip:
-      "„電車で行きます“ bedeutet „Ich fahre mit dem Zug“. „で“ zeigt hier das Verkehrsmittel an.",
+      "In „電車で行きます“ bedeutet „電車で“ ungefähr „mit dem Zug“. Das Muster ist sehr nützlich: 乗り物 + で + 行きます. Du kannst es austauschen: バスで行きます = Ich fahre mit dem Bus. Wichtig: Für das Ziel benutzt du nicht „で“, sondern „に“, z. B. ホテルに行きます.",
     relatedVocabIds: ["go", "station", "hotel"],
   },
   {
@@ -201,8 +201,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["トイレはどこですか。"],
     commonPatterns: ["〜はどこですか"],
     relatedExpressions: ["トイレを借ります"],
-    shortTip: "Diese Frage ist eine der nützlichsten auf Reisen.",
-    detailTip: "„トイレはどこですか“ ist ein Standardsatz, um nach der Toilette zu fragen.",
+    shortTip: "„トイレはどこですか“ – vielleicht der nützlichste Satz auf jeder Reise.",
+    detailTip:
+      "„トイレ“ kommt aus dem Englischen „toilet“ und wird ähnlich ausgesprochen. Mit „トイレはどこですか“ fragst du höflich nach der Toilette – das gleiche Muster wie bei „駅はどこですか“. Für noch mehr Höflichkeit stellst du „すみません“ voran: すみません、トイレはどこですか。 Diesen Satz solltest du als Ersten auswendig lernen.",
     relatedVocabIds: ["where", "excuseMe", "station"],
   },
   {
@@ -222,9 +223,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["ホテルに行きます。", "駅に行きます。"],
     commonPatterns: ["〜に行きます"],
     relatedExpressions: ["行きます", "行く"],
-    shortTip: "„〜に行きます“ zeigt ein Ziel an.",
+    shortTip: "„〜に行きます“ zeigt, wohin du gehst oder fährst.",
     detailTip:
-      "„行く“ ist ein Bewegungsverb. Wie in „ホテルに行きます“ wird es oft in der Form „〜に行きます“ benutzt.",
+      "„行く“ heißt „gehen“, höflich „行きます“. Das Ziel bekommt immer „に“: ホテルに行きます = Ich gehe zum Hotel. Ein häufiger Fehler ist, hier „で“ statt „に“ zu benutzen – „で“ ist für das Verkehrsmittel reserviert. Eselsbrücke: „に“ zeigt wie ein Pfeil auf den Ort, wo du hinwillst.",
     relatedVocabIds: ["hotel", "station", "train"],
   },
   {
@@ -244,9 +245,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["駅はどこですか。", "トイレはどこですか。", "ホテルはどこですか。"],
     commonPatterns: ["〜はどこですか"],
     relatedExpressions: ["どこですか", "どこ"],
-    shortTip: "„どこ“ ist das Grundwort, um nach einem Ort zu fragen.",
+    shortTip: "„どこですか“ ist dein Werkzeug, um nach jedem Ort zu fragen.",
     detailTip:
-      "„どこですか“ bedeutet „wo ist …?“. Mit „〜はどこですか“ kann man nach verschiedenen Orten fragen.",
+      "„どこ“ bedeutet „wo“, und zusammen mit „ですか“ wird daraus eine höfliche Frage. Das Muster [Ort] + はどこですか funktioniert universell: 駅はどこですか, ホテルはどこですか. Vergiss das „は“ nicht – es verbindet den Ort mit der Frage. Wenn du dir nur einen Reisesatz merkst, dann diesen.",
     relatedVocabIds: ["station", "toilet", "hotel", "excuseMe"],
   },
   {
@@ -266,9 +267,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["すみません、駅はどこですか。", "すみません、トイレはどこですか。"],
     commonPatterns: ["すみません、〜"],
     relatedExpressions: ["すみません"],
-    shortTip: "„すみません“ benutzt man, um jemanden höflich anzusprechen.",
+    shortTip: "„すみません“ ist deine Türöffner-Floskel, bevor du jemanden ansprichst.",
     detailTip:
-      "„すみません“ bedeutet „Entschuldigung“ und macht eine Frage nach dem Weg höflicher. Man kann es auch allein als Entschuldigung benutzen.",
+      "„すみません“ bedeutet „Entschuldigung“ und wird benutzt, um höflich ein Gespräch zu beginnen – ähnlich wie „Entschuldigen Sie“ im Deutschen. Vor einer Wegfrage klingt es automatisch freundlicher: すみません、駅はどこですか。 Du kannst es auch allein benutzen, um dich zu entschuldigen oder Aufmerksamkeit zu bekommen. Ein Wort, unzählige Situationen.",
     relatedVocabIds: ["where", "toilet", "station"],
   },
   {
@@ -288,9 +289,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["右です。", "右に行きます。"],
     commonPatterns: ["〜です", "右に〜"],
     relatedExpressions: ["右側", "右に曲がります"],
-    shortTip: "„右“ ist ein Grundwort für Richtungen.",
+    shortTip: "„右です“ ist deine kurze Antwort, wenn jemand nach dem Weg fragt.",
     detailTip:
-      "„右です“ bedeutet „Es ist rechts“ und ist eine kurze Antwort bei einer Wegbeschreibung.",
+      "„右“ bedeutet „rechts“. Mit „です“ dahinter wird daraus eine vollständige, höfliche Antwort: 右です = Es ist rechts. Das gleiche Muster gilt für „左です“ (links). Bei Wegbeschreibungen reicht oft schon dieses eine Wort plus „です“.",
     relatedVocabIds: ["left", "near", "far", "station"],
   },
   {
@@ -310,8 +311,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["左です。", "左に行きます。"],
     commonPatterns: ["〜です", "左に〜"],
     relatedExpressions: ["左側", "左に曲がります"],
-    shortTip: "„左です“ ist eine kurze Antwort für eine Richtung.",
-    detailTip: "„左です“ bedeutet „Es ist links“ und ist das Gegenteil von „右“.",
+    shortTip: "„左です“ ist das Gegenstück zu „右です“ – links statt rechts.",
+    detailTip:
+      "„左“ heißt „links“, genau wie „右“ für „rechts“ steht. Mit „です“ wird daraus eine kurze, höfliche Antwort: 左です = Es ist links. Ein guter Trick, um beide nicht zu verwechseln: lerne sie immer als Paar. Übe beide zusammen, dann sitzen sie schneller.",
     relatedVocabIds: ["right", "near", "far", "station"],
   },
   {
@@ -331,8 +333,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["駅は近いです。", "ホテルは近いです。"],
     commonPatterns: ["〜は近いです"],
     relatedExpressions: ["近くに", "近い"],
-    shortTip: "„近いです“ bedeutet, dass etwas nah ist.",
-    detailTip: "„駅は近いです“ bedeutet „Der Bahnhof ist nah“. Das Gegenteil ist „遠いです“.",
+    shortTip: "„近いです“ sagt: das ist nicht weit von hier.",
+    detailTip:
+      "„近い“ bedeutet „nah“, und mit „です“ wird es zur höflichen Aussage: 駅は近いです = Der Bahnhof ist nah. Das Gegenteil ist „遠いです“ (weit entfernt) – lerne beide Wörter als Paar. Das Muster [Ort] + は近いです funktioniert für jeden Ort. Praktisch, um schnell einzuschätzen, ob sich ein Fußweg lohnt.",
     relatedVocabIds: ["far", "right", "left", "station", "hotel"],
   },
   {
@@ -352,9 +355,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["ホテルは遠いです。", "駅は遠いです。"],
     commonPatterns: ["〜は遠いです"],
     relatedExpressions: ["遠くに", "遠い"],
-    shortTip: "„遠いです“ bedeutet, dass etwas weit entfernt ist.",
+    shortTip: "„遠いです“ sagt: das ist ein ganzes Stück entfernt.",
     detailTip:
-      "„ホテルは遠いです“ bedeutet „Das Hotel ist weit entfernt“. Das ist das Gegenteil von „近い“.",
+      "„遠い“ bedeutet „weit“ oder „entfernt“, mit „です“ höflich als Aussage: ホテルは遠いです = Das Hotel ist weit entfernt. Es ist das Gegenteil von „近い“ (nah) – lerne beide zusammen als Paar. Diese Info hilft dir zu entscheiden, ob du lieber ein Taxi oder den Zug nimmst. Ein einfaches Wort mit großer praktischer Wirkung.",
     relatedVocabIds: ["near", "right", "left", "station", "hotel"],
   },
 

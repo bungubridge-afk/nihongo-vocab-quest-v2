@@ -23,9 +23,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "コーヒーをください。",
         exampleKana: "コーヒーをください。",
         exampleGerman: "Einen Kaffee bitte.",
-        shortTip: "„Kudasai“ ist ein Grundausdruck für Bestellungen und Bitten.",
+        shortTip: "„コーヒーをください“ ist dein Standardsatz, um einen Kaffee zu bestellen.",
         detailTip:
-          "„コーヒーをください“ ist eine höfliche Bitte, die man im Café oder Geschäft benutzt. Im lockeren Ton sagt man auch einfach „コーヒーください“.",
+          "Im Café sagst du einfach [Ding] + „をください“ – das ist die sichere Bestellform, egal was du willst. „コーヒーをください“ heißt „Einen Kaffee bitte“. Kurz und locker geht auch „コーヒーください“. Merk dir „ください“ als dein Zauberwort zum Bestellen.",
       },
       {
         id: "cafe-q2",
@@ -73,9 +73,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "水をください。",
         exampleKana: "みずをください。",
         exampleGerman: "Wasser bitte.",
-        shortTip: "„〜をください“ benutzt man beim Bestellen oder Bitten.",
+        shortTip: "„〜をください“ ist dein sicherer Standardsatz zum Bestellen.",
         detailTip:
-          "„水をください“ ist ein nützlicher Ausdruck im Geschäft oder Restaurant. „ください“ ist eine höfliche Bitte. „水を飲みます“ bedeutet „Ich trinke Wasser“ und ist daher keine Bestellung.",
+          "Wenn du in Japan etwas bestellen willst, ist „〜をください“ die einfachste sichere Form. Setze einfach das Ding davor: 水をください = Wasser bitte. Das klingt höflich genug für Cafés und Läden. Nicht verwechseln: „水を飲みます“ heißt „Ich trinke Wasser“, nicht „Wasser bitte“.",
       },
       {
         id: "cafe-challenge",
@@ -98,9 +98,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "コーヒーとパンをください。",
         exampleKana: "コーヒーとパンをください。",
         exampleGerman: "Kaffee und Brot bitte.",
-        shortTip: "„A と B“ bedeutet „A und B“.",
+        shortTip: "„A と B“ ist dein Werkzeug, um zwei Dinge auf einmal zu bestellen.",
         detailTip:
-          "„と“ verbindet zwei Nomen. Beispiel: コーヒーとパン = Kaffee und Brot. Mit „〜をください“ wird daraus ein Bestellsatz.",
+          "„と“ verbindet zwei Nomen wie das deutsche „und“: コーヒーとパン = Kaffee und Brot. Häng „〜をください“ dran, und du hast einen kompletten Bestellsatz: コーヒーとパンをください。 Das Muster funktioniert auch mit mehr als zwei Dingen. Ein Wort, doppelte Bestellung.",
       },
     ],
   },
@@ -138,9 +138,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "駅はどこですか。",
         exampleKana: "えきはどこですか。",
         exampleGerman: "Wo ist der Bahnhof?",
-        shortTip: "„駅“ ist ein wichtiges Wort auf Reisen.",
+        shortTip: "„駅はどこですか“ ist deine Rettung, wenn du den Bahnhof suchst.",
         detailTip:
-          "„駅はどこですか“ ist ein natürlicher Ausdruck, um nach dem Bahnhof zu fragen. „どこですか“ bedeutet „wo ist …?“.",
+          "„駅“ heißt „Bahnhof“ und ist eines der wichtigsten Reisewörter überhaupt. Das Muster „〜はどこですか“ bedeutet „Wo ist …?“ und funktioniert für jeden Ort: ホテルはどこですか, トイレはどこですか. Vergiss das „は“ nicht – ohne „は“ klingt der Satz unvollständig. Mit diesem einen Muster findest du fast alles.",
       },
       {
         id: "reise-q2",
@@ -154,9 +154,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "トイレはどこですか。",
         exampleKana: "トイレはどこですか。",
         exampleGerman: "Wo ist die Toilette?",
-        shortTip: "„トイレ“ wird auf Japanisch oft in Katakana geschrieben.",
+        shortTip: "„トイレはどこですか“ – vielleicht der nützlichste Satz auf jeder Reise.",
         detailTip:
-          "„トイレはどこですか“ ist sehr nützlich auf Reisen. Mit „すみません“ davor klingt die Frage noch höflicher.",
+          "„トイレ“ kommt aus dem Englischen „toilet“ und wird ähnlich ausgesprochen. Mit „トイレはどこですか“ fragst du höflich nach der Toilette – das gleiche Muster wie bei „駅はどこですか“. Für noch mehr Höflichkeit stellst du „すみません“ voran. Diesen Satz solltest du zuerst auswendig lernen.",
       },
       {
         id: "reise-q3",
@@ -170,9 +170,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "ホテルに行きます。",
         exampleKana: "ホテルにいきます。",
         exampleGerman: "Ich gehe zum Hotel.",
-        shortTip: "„〜に行きます“ bedeutet, dass man zu einem Ziel geht.",
+        shortTip: "„〜に行きます“ zeigt, wohin du gehst oder fährst.",
         detailTip:
-          "„に“ zeigt das Ziel an. „ホテルに行きます“ bedeutet, dass man zum Hotel geht.",
+          "„に“ markiert das Ziel: ホテルに行きます = Ich gehe zum Hotel. Ein häufiger Fehler ist, hier „で“ statt „に“ zu benutzen – „で“ ist für das Verkehrsmittel reserviert, nicht das Ziel. Eselsbrücke: „に“ zeigt wie ein Pfeil auf den Ort, wo du hinwillst. Das Muster funktioniert für jedes Reiseziel.",
       },
       {
         id: "reise-q4",
@@ -186,9 +186,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "電車で行きます。",
         exampleKana: "でんしゃでいきます。",
         exampleGerman: "Ich fahre mit dem Zug.",
-        shortTip: "„で“ zeigt das Verkehrsmittel an.",
+        shortTip: "„で“ zeigt hier, womit du dich bewegst: Zug, Bus oder Auto.",
         detailTip:
-          "„電車で行きます“ bedeutet „Ich fahre mit dem Zug“. Für Verkehrsmittel benutzt man „で“.",
+          "In „電車で行きます“ bedeutet „電車で“ ungefähr „mit dem Zug“. Das Muster ist sehr nützlich: 乗り物 + で + 行きます. Du kannst es austauschen: バスで行きます = Ich fahre mit dem Bus. Wichtig: Für das Ziel benutzt du nicht „で“, sondern „に“, z. B. ホテルに行きます.",
       },
       {
         id: "reise-q5",
@@ -210,9 +210,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "駅はどこですか。",
         exampleKana: "えきはどこですか。",
         exampleGerman: "Wo ist der Bahnhof?",
-        shortTip: "„〜はどこですか“ ist ein Grundausdruck, um nach einem Ort zu fragen.",
+        shortTip: "„〜はどこですか“ ist dein Werkzeug, um nach jedem Ort zu fragen.",
         detailTip:
-          "„駅はどこですか“ ist ein natürlicher Ausdruck, um nach dem Bahnhof zu fragen. „は“ markiert das Thema, „どこですか“ bedeutet „wo ist …?“.",
+          "„どこ“ bedeutet „wo“, zusammen mit „ですか“ wird daraus eine höfliche Frage. Das Muster [Ort] + はどこですか funktioniert universell: 駅はどこですか, ホテルはどこですか. Das „は“ verbindet den Ort mit der Frage – lass es nicht weg. Wenn du dir nur einen Reisesatz merkst, dann diesen.",
       },
       {
         id: "reise-q6",
@@ -226,9 +226,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "右です。",
         exampleKana: "みぎです。",
         exampleGerman: "Es ist rechts.",
-        shortTip: "„右“ ist ein Grundwort für Richtungen.",
+        shortTip: "„右です“ ist deine kurze Antwort, wenn jemand nach dem Weg fragt.",
         detailTip:
-          "„右です“ bedeutet „Es ist rechts“ und ist eine kurze Antwort bei einer Wegbeschreibung. Das kommt oft bei Wegfragen auf Reisen vor.",
+          "„右“ bedeutet „rechts“. Mit „です“ dahinter wird daraus eine vollständige, höfliche Antwort: 右です = Es ist rechts. Das gleiche Muster gilt für „左です“ (links). Bei Wegbeschreibungen auf Reisen reicht oft schon dieses eine Wort plus „です“.",
       },
       {
         id: "reise-q7",
@@ -242,9 +242,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "駅は近いです。",
         exampleKana: "えきはちかいです。",
         exampleGerman: "Der Bahnhof ist nah.",
-        shortTip: "„近いです“ bedeutet, dass etwas nah ist.",
+        shortTip: "„近いです“ sagt: das ist nicht weit von hier.",
         detailTip:
-          "„駅は近いです“ bedeutet, dass der Bahnhof nah ist. Das Gegenteil ist „遠いです“.",
+          "„近い“ bedeutet „nah“, mit „です“ wird es zur höflichen Aussage: 駅は近いです = Der Bahnhof ist nah. Das Gegenteil ist „遠いです“ (weit entfernt) – lerne beide Wörter als Paar. Das Muster [Ort] + は近いです funktioniert für jeden Ort. Praktisch, um schnell einzuschätzen, ob sich ein Fußweg lohnt.",
       },
       {
         id: "reise-q8",
@@ -266,9 +266,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "すみません、トイレはどこですか。",
         exampleKana: "すみません、トイレはどこですか。",
         exampleGerman: "Entschuldigung, wo ist die Toilette?",
-        shortTip: "„すみません“ am Satzanfang macht eine Frage höflicher.",
+        shortTip: "„すみません“ am Satzanfang macht jede Frage automatisch höflicher.",
         detailTip:
-          "Bei einer Wegfrage benutzt man am Anfang oft „すみません“. „トイレはどこですか“ fragt nach einem Ort.",
+          "„すみません“ bedeutet „Entschuldigung“ und ist die perfekte Türöffner-Floskel, bevor du jemanden ansprichst. Vor einer Wegfrage klingt sie automatisch freundlicher: すみません、トイレはどこですか。 Du kannst „すみません“ auch allein benutzen, um Aufmerksamkeit zu bekommen. Ein Wort, unzählige Situationen.",
       },
       {
         id: "reise-q9",
@@ -290,9 +290,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "ホテルは遠いです。",
         exampleKana: "ホテルはとおいです。",
         exampleGerman: "Das Hotel ist weit entfernt.",
-        shortTip: "„遠いです“ bedeutet, dass etwas weit entfernt ist.",
+        shortTip: "„遠いです“ sagt: das ist ein ganzes Stück entfernt.",
         detailTip:
-          "„ホテルは遠いです“ bedeutet, dass das Hotel weit entfernt ist. „近いです“ ist das Gegenteil.",
+          "„遠い“ bedeutet „weit“ oder „entfernt“, mit „です“ höflich als Aussage: ホテルは遠いです = Das Hotel ist weit entfernt. Es ist das Gegenteil von „近い“ (nah) – lerne beide zusammen. Diese Info hilft dir zu entscheiden, ob du lieber ein Taxi nimmst. Ein einfaches Wort mit großer praktischer Wirkung.",
       },
       {
         id: "reise-challenge",
@@ -316,9 +316,9 @@ export const questCategories: QuestCategory[] = [
         exampleJapanese: "電車でホテルに行きます。",
         exampleKana: "でんしゃでホテルにいきます。",
         exampleGerman: "Ich fahre mit dem Zug zum Hotel.",
-        shortTip: "„電車で“ zeigt das Verkehrsmittel, „ホテルに“ zeigt das Ziel.",
+        shortTip: "„電車で“ zeigt das Verkehrsmittel, „ホテルに“ zeigt das Ziel – zusammen ein kompletter Reisesatz.",
         detailTip:
-          "„電車でホテルに行きます“ verbindet Verkehrsmittel und Ziel in einem Satz. „で“ steht für das Verkehrsmittel, „に“ für das Ziel.",
+          "„電車でホテルに行きます“ verbindet Mittel und Ziel in einem Satz: „で“ für womit (mit dem Zug), „に“ für wohin (zum Hotel). Das Muster [Verkehrsmittel] + で + [Ort] + に + 行きます kannst du immer wieder benutzen: バスで駅に行きます = Ich fahre mit dem Bus zum Bahnhof. Ein typischer Fehler ist, „で“ und „に“ zu vertauschen – dann klingt der Satz falsch. Merk dir: で = womit, に = wohin.",
       },
     ],
   },
