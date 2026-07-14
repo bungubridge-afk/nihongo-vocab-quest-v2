@@ -8,7 +8,42 @@
 - C: 5
 - D: 2
 
-## Overall Findings
+**Status: original findings below (pre-fix). See "Fixed (follow-up pass)" for what changed.**
+
+## Fixed (follow-up pass)
+
+All issues below were addressed in `src/lib/quizBuilder.ts`. No other files were changed.
+
+1. **right / left (D → Fixed).** `findParticle()` now explicitly skips a "で" match when it's
+   the start of "です" (`sentence.slice(index, index + 2) === "です"`), so the false-positive
+   split can no longer happen for any word, present or future. On top of that, `right` and
+   `left` now have a dedicated hand-curated 10-question template
+   (`buildDirectionWordPracticeQuestions`) covering meaning, a fill-blank using two different
+   real sentence frames ("駅は____です。" / "____に行きます。"), phrase-choice pairs, a
+   rechts/links contrast sentence, a paired-meaning question, and a polite Mini Challenge —
+   verified to never produce `右____す` / `右で____` or any single-kana answer.
+2. **hotel / where / japaneseLanguage / friend / meet (C → Fixed).** Each now has a
+   hand-curated template (`buildHotelPracticeQuestions`, `buildWherePracticeQuestions`,
+   `buildJapaneseLanguagePracticeQuestions`, `buildFriendPracticeQuestions`,
+   `buildMeetPracticeQuestions`) built from genuinely distinct real/constructed sentences, so
+   Q5–Q10 never repeat the same prompt+answer+type combination. `findRelatedSentenceSource()`
+   also gained a collision guard (skips a related sentence that's byte-identical to the
+   target's own sentence) as a generic safety net for any other word with the same
+   vocabData collision pattern.
+3. **Schule/Freunde romaji gap (10 words).** `EXAMPLE_ROMAJI` now has entries for `school`,
+   `teacher`, `japaneseLanguage`, `study`, `today`, `friend`, `meet`, `talk`, `tomorrow`, and
+   `like`. Every phrase-choice question across all 26 words now returns a non-empty
+   `answerRomaji`/`feedback.romaji` (verified by script across all 260 generated questions,
+   plus two pre-existing blanks on `water`'s and `station`'s combo questions found and fixed
+   along the way).
+
+Verified: `npm run build` and `npm run lint` both pass; a script exercising all 26
+`buildPracticeQuestions()` outputs confirms 10 questions each, 4 choices each, no duplicate
+choices, answer always present, no `____す` / bare-`す` patterns, no repeated
+prompt+answer+type combos in the previously-C-rated words, and non-empty romaji on every
+phrase-choice question.
+
+## Overall Findings (original, pre-fix)
 
 `buildPracticeQuestions(vocabId)` reliably returns 10 well-formed questions for all 26
 words: every question has exactly 4 choices, the answer is always present in `choices`,
@@ -188,7 +223,7 @@ Recommendation:
 - Keep generic template (already hand-curated; no action needed)
 
 ### hotel
-Rating: C
+Rating: C → **Fixed (A)**: now a hand-curated template (`buildHotelPracticeQuestions`); Q5–Q10 are 6 genuinely distinct sentences (own, near, far, train combo, where, polite confirm), no more byte-identical repeat.
 
 Generated Questions:
 1. [meaning-choice] ホテル → Hotel
@@ -272,7 +307,7 @@ Recommendation:
 - Keep generic template
 
 ### where
-Rating: C
+Rating: C → **Fixed (A)**: now a hand-curated template (`buildWherePracticeQuestions`); tests どこ across station/hotel/toilet contexts with no repeated sentence, plus a short-phrase question and a polite Mini Challenge.
 
 Generated Questions:
 1. [meaning-choice] どこ → wo
@@ -314,7 +349,7 @@ Recommendation:
 - Keep generic template
 
 ### right
-Rating: D
+Rating: D → **Fixed (A)**: `findParticle()` no longer matches "で" inside "です", and `right` now has a dedicated template (`buildDirectionWordPracticeQuestions`); Q3/Q4 are natural fill-blanks ("駅は____です。"/"____に行きます。"→右), no more `右____す`/`右で____`.
 
 Generated Questions:
 1. [meaning-choice] 右 → rechts
@@ -337,7 +372,7 @@ Recommendation:
 - Needs urgent fix (or Needs custom template, matching the special-case approach used for water/station)
 
 ### left
-Rating: D
+Rating: D → **Fixed (A)**: same fix as right (shared `buildDirectionWordPracticeQuestions` template + the `findParticle()` です-guard); no more `左____す`/`左で____`.
 
 Generated Questions:
 1. [meaning-choice] 左 → links
@@ -446,7 +481,7 @@ Recommendation:
 - Keep generic template
 
 ### japaneseLanguage
-Rating: C
+Rating: C → **Fixed (A)**: light hand-curated template (`buildJapaneseLanguagePracticeQuestions`) adds a today-combo sentence, a "日本語は言語です。" flavor sentence, and a 勉強する/話す usage contrast — no more byte-identical Q7/Q8. Romaji also backfilled.
 
 Generated Questions:
 1. [meaning-choice] 日本語 → Japanisch
@@ -512,7 +547,7 @@ Recommendation:
 - Keep generic template
 
 ### friend
-Rating: C
+Rating: C → **Fixed (A)**: hand-curated template (`buildFriendPracticeQuestions`) draws on talk/tomorrow/like's real sentences plus a 会う/話す/好き usage-contrast question — no more byte-identical Q7/Q8. Romaji backfilled.
 
 Generated Questions:
 1. [meaning-choice] 友だち → Freund/Freundin
@@ -534,7 +569,7 @@ Recommendation:
 - Needs light adjustment (same fix as hotel/where/japaneseLanguage)
 
 ### meet
-Rating: C
+Rating: C → **Fixed (A)**: hand-curated template (`buildMeetPracticeQuestions`) mirrors friend's fix from the 会う perspective, with a new today-combo sentence so Q6/Q10 no longer repeat. Romaji backfilled.
 
 Generated Questions:
 1. [meaning-choice] 会う → treffen
@@ -623,15 +658,15 @@ Recommendation:
 
 ## Fix Priority
 
-1. **right** — D — `findParticle()` false-positives on the "で" inside "です" because 右です。has no real leading particle, producing a broken Q3 (`右____す。`→で) and Q4 (`右で____。`→す, a meaningless single-kana answer). Needs a custom template or a generic-logic fix that special-cases sentences with no real particle before です.
-2. **left** — D — Identical root cause and identical breakage to right (`左です。`).
-3. **hotel** — C — Q5/Q7 and Q6/Q8 are byte-identical because vocabData.ts gives `hotel` and `go` the exact same example sentence, and the non-reworded instruction makes the repeat look like a bug.
-4. **where** — C — Same collision, with `station` (both use "駅はどこですか。"). Matches the brief's specific concern that どこ makes a weak standalone Sub Quest subject.
-5. **japaneseLanguage** — C — Same collision, with `study` (both use "日本語を勉強します。"). Matches the brief's specific concern about 日本語/勉強する repeating.
-6. **friend** — C — Same collision, with `meet` (both use "友だちに会います。").
-7. **meet** — C — Mirror of friend; symptom is slightly milder (instruction does get reworded) but the underlying duplicate-sentence collision is the same and should be fixed together with friend.
-8. **Schule/Freunde romaji gap** — B, affects 10 words (school, teacher, japaneseLanguage, study, today, friend, meet, talk, tomorrow, like) — `EXAMPLE_ROMAJI` in quizBuilder.ts has no entries for these ids, so every phrase-choice question shows blank romaji in feedback. Lower priority than the D/C items since nothing is factually wrong, just incomplete.
-9. **Remaining B-rated generic-template words** (coffee, drink, eat, train, toilet, go, excuseMe, near, far, teacher, study, today, talk, tomorrow, like) — Q5≈Q7 / Q6≈Q8 repetition when no related sentence mentions the target word, but always reworded and always correct. Lowest priority; acceptable to ship as-is.
+1. ~~**right** — D — です-split bug.~~ **Fixed**: `findParticle()` guard + dedicated template.
+2. ~~**left** — D — same bug.~~ **Fixed**: same template + guard.
+3. ~~**hotel** — C — hotel/go sentence collision.~~ **Fixed**: dedicated template.
+4. ~~**where** — C — where/station sentence collision.~~ **Fixed**: dedicated template.
+5. ~~**japaneseLanguage** — C — japaneseLanguage/study sentence collision.~~ **Fixed**: light dedicated template.
+6. ~~**friend** — C — friend/meet sentence collision.~~ **Fixed**: dedicated template.
+7. ~~**meet** — C — mirror of friend.~~ **Fixed**: dedicated template.
+8. ~~**Schule/Freunde romaji gap** — B, 10 words.~~ **Fixed**: `EXAMPLE_ROMAJI` extended to cover all 10, plus two pre-existing blanks on water/station's combo questions found and fixed along the way.
+9. **Remaining B-rated generic-template words** (coffee, drink, eat, train, toilet, go, excuseMe, near, far, teacher, study, today, talk, tomorrow, like) — Q5≈Q7 / Q6≈Q8 repetition when no related sentence mentions the target word, but always reworded and always correct. Out of scope for this pass (not requested); still acceptable to ship as-is per the original recommendation.
 
 ## Recommended Next Implementation
 

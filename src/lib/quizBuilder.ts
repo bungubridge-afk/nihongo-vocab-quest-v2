@@ -25,6 +25,16 @@ const EXAMPLE_ROMAJI: Partial<Record<string, string>> = {
   left: "hidari desu",
   near: "eki wa chikai desu",
   far: "hoteru wa tooi desu",
+  school: "gakkou ni ikimasu",
+  teacher: "sensei ni kikimasu",
+  japaneseLanguage: "nihongo o benkyou shimasu",
+  study: "nihongo o benkyou shimasu",
+  today: "kyou, gakkou ni ikimasu",
+  friend: "tomodachi ni aimasu",
+  meet: "tomodachi ni aimasu",
+  talk: "tomodachi to hanashimasu",
+  tomorrow: "ashita, tomodachi ni aimasu",
+  like: "tomodachi ga suki desu",
 };
 
 const PARTICLES = ["を", "に", "と", "で", "が", "は"];
@@ -63,7 +73,12 @@ function findParticle(sentence: string): { particle: string; index: number } | n
   let found: { particle: string; index: number } | null = null;
   for (const particle of PARTICLES) {
     const index = sentence.indexOf(particle);
-    if (index !== -1 && (found === null || index < found.index)) {
+    if (index === -1) continue;
+    // A "で" at this position is the start of the polite copula "です", not a real
+    // particle — matching it would blank out "です" into meaningless fragments
+    // (e.g. "右です。" → "右____す。" with answer "で").
+    if (particle === "で" && sentence.slice(index, index + 2) === "です") continue;
+    if (found === null || index < found.index) {
       found = { particle, index };
     }
   }
@@ -243,6 +258,11 @@ function findRelatedSentenceSource(vocab: VocabItem): SentenceSource | null {
   for (const id of vocab.relatedVocabIds ?? []) {
     const related = getVocabById(id);
     if (!related) continue;
+    // Some related pairs share the exact same stored example sentence (e.g. hotel/go both
+    // use "ホテルに行きます。"). Using it here would produce a Q7/Q8 that's byte-identical
+    // to Q5/Q6 with a non-reworded instruction, reading as a glitch rather than
+    // reinforcement — skip it and let the caller fall back to the reworded-instruction path.
+    if (related.exampleJapanese === vocab.exampleJapanese) continue;
     if (related.exampleJapanese.includes(vocab.kanji)) {
       return {
         japanese: related.exampleJapanese,
@@ -355,6 +375,98 @@ function buildKanaRecognitionQuestion(vocab: VocabItem, pool: VocabItem[]): Quiz
   };
 }
 
+interface CustomSentencePair {
+  japanese: string;
+  german: string;
+  kana?: string;
+  romaji?: string;
+}
+
+/**
+ * Builds a hand-written phrase-choice question (German prompt → Japanese sentence answer)
+ * for hand-curated Sub Quest templates, where the sentence pair and distractors are
+ * specified explicitly rather than derived from the distractor pool.
+ */
+function buildCustomPhraseQuestion(
+  vocab: VocabItem,
+  idSuffix: string,
+  pair: CustomSentencePair,
+  distractors: string[],
+  instruction = "Wähle den natürlichen japanischen Satz."
+): QuizQuestion {
+  return {
+    id: `practice-${vocab.id}-${idSuffix}`,
+    type: "phrase-choice",
+    categoryId: vocab.categoryId,
+    prompt: pair.german,
+    instruction,
+    choices: orderDeterministically([pair.japanese, ...distractors], `${vocab.id}:${idSuffix}`),
+    answer: pair.japanese,
+    vocabId: vocab.id,
+    answerKana: pair.kana,
+    answerRomaji: pair.romaji,
+    answerGerman: pair.german,
+    exampleJapanese: pair.japanese,
+    exampleKana: pair.kana,
+    exampleGerman: pair.german,
+    shortTip: vocab.shortTip,
+    detailTip: vocab.detailTip,
+  };
+}
+
+/**
+ * Builds a hand-written sentence-meaning-choice question (Japanese sentence prompt → German
+ * meaning answer) for hand-curated Sub Quest templates, the reverse direction of
+ * `buildCustomPhraseQuestion`.
+ */
+function buildCustomMeaningQuestion(
+  vocab: VocabItem,
+  idSuffix: string,
+  pair: CustomSentencePair,
+  distractors: string[],
+  instruction = "Was bedeutet dieser Satz?"
+): QuizQuestion {
+  return {
+    id: `practice-${vocab.id}-${idSuffix}`,
+    type: "sentence-meaning-choice",
+    categoryId: vocab.categoryId,
+    prompt: pair.japanese,
+    instruction,
+    choices: orderDeterministically([pair.german, ...distractors], `${vocab.id}:${idSuffix}`),
+    answer: pair.german,
+    vocabId: vocab.id,
+    exampleJapanese: pair.japanese,
+    exampleKana: pair.kana,
+    exampleGerman: pair.german,
+    shortTip: vocab.shortTip,
+    detailTip: vocab.detailTip,
+  };
+}
+
+/**
+ * Builds a hand-written "common mistake" question from explicit choices, for hand-curated
+ * templates that want to contrast the selected word's usage against a specific near-miss
+ * (e.g. 会う vs 話す for the same "friend" topic) rather than the generic predicate-swap.
+ */
+function buildCustomMistakeQuestion(
+  vocab: VocabItem,
+  idSuffix: string,
+  prompt: string,
+  answer: string,
+  choices: string[]
+): QuizQuestion {
+  return {
+    id: `practice-${vocab.id}-${idSuffix}`,
+    type: "mistake-choice",
+    categoryId: vocab.categoryId,
+    prompt,
+    instruction: "Achtung: Wähle den richtigen Satz (keine Verwechslung).",
+    choices: orderDeterministically(choices, `${vocab.id}:${idSuffix}`),
+    answer,
+    vocabId: vocab.id,
+  };
+}
+
 /**
  * Generic 10-question Sub Quest for any vocab item: every question's prompt or answer is
  * either the word itself or a sentence that mentions it, so the selected word stays the
@@ -389,6 +501,7 @@ function buildWaterPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQ
 
   const comboJapanese = coffee ? `水と${coffee.kanji}をください。` : "水とコーヒーをください。";
   const comboGerman = coffee ? `Wasser und ${coffee.german} bitte.` : "Wasser und Kaffee bitte.";
+  const comboRomaji = `mizu to ${coffee?.romaji ?? "koohii"} o kudasai`;
 
   return [
     buildMeaningChoiceQuestion(vocab, pool),
@@ -435,6 +548,7 @@ function buildWaterPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQ
       ),
       answer: comboJapanese,
       vocabId: vocab.id,
+      answerRomaji: comboRomaji,
       answerGerman: comboGerman,
       exampleJapanese: comboJapanese,
       exampleGerman: comboGerman,
@@ -605,6 +719,7 @@ function buildStationPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): Qui
       ),
       answer: trainComboJapanese,
       vocabId: vocab.id,
+      answerRomaji: "densha de eki ni ikimasu",
       exampleJapanese: trainComboJapanese,
       exampleGerman: trainComboGerman,
       shortTip: vocab.shortTip,
@@ -634,11 +749,552 @@ function buildStationPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): Qui
   ];
 }
 
+interface DirectionWordConfig {
+  opposite: string;
+  oppositeGerman: string;
+  oppositeRomaji: string;
+  kana: string;
+  romaji: string;
+}
+
+/**
+ * Shared builder for "right"/"left" — both are bare direction words whose only stored
+ * example is "[word]です。" with no real particle, which the generic template's
+ * findParticle()/findFillBlank() logic can't safely turn into a fill-blank question. A
+ * hand-curated template sidesteps that entirely and gives each word natural sentences.
+ */
+function buildDirectionWordPracticeQuestions(
+  vocab: VocabItem,
+  pool: VocabItem[],
+  config: DirectionWordConfig
+): QuizQuestion[] {
+  const { opposite, oppositeGerman, oppositeRomaji, kana, romaji } = config;
+  const directionChoices = [vocab.kanji, opposite, "近い", "遠い"];
+
+  const stationSentence: CustomSentencePair = {
+    japanese: `駅は${vocab.kanji}です。`,
+    german: `Der Bahnhof ist ${vocab.german}.`,
+    kana: `えきは${kana}です。`,
+    romaji: `eki wa ${romaji} desu`,
+  };
+  const goSentence: CustomSentencePair = {
+    japanese: `${vocab.kanji}に行きます。`,
+    german: `Ich gehe nach ${vocab.german}.`,
+    kana: `${kana}にいきます。`,
+    romaji: `${romaji} ni ikimasu`,
+  };
+  const contrastSentence: CustomSentencePair = {
+    japanese: `${opposite}ではありません。${vocab.kanji}です。`,
+    german: `${vocab.german.charAt(0).toUpperCase()}${vocab.german.slice(1)}, nicht ${oppositeGerman}.`,
+    kana: undefined,
+    romaji: `${oppositeRomaji} dewa arimasen. ${romaji} desu.`,
+  };
+  const confirmSentence: CustomSentencePair = {
+    japanese: `すみません、駅は${vocab.kanji}ですか。`,
+    german: `Entschuldigung, ist der Bahnhof ${vocab.german}?`,
+    kana: `すみません、えきは${kana}ですか。`,
+    romaji: `sumimasen, eki wa ${romaji} desu ka`,
+  };
+
+  return [
+    buildMeaningChoiceQuestion(vocab, pool),
+    buildJapaneseChoiceQuestion(vocab, pool),
+    {
+      id: `practice-${vocab.id}-station-blank`,
+      type: "fill-blank",
+      categoryId: vocab.categoryId,
+      prompt: "駅は____です。",
+      instruction: "Ergänze den Satz.",
+      choices: orderDeterministically(directionChoices, `${vocab.id}:station-blank`),
+      answer: vocab.kanji,
+      vocabId: vocab.id,
+      exampleJapanese: stationSentence.japanese,
+      exampleKana: stationSentence.kana,
+      exampleGerman: stationSentence.german,
+      shortTip: vocab.shortTip,
+      detailTip: vocab.detailTip,
+    },
+    {
+      id: `practice-${vocab.id}-go-blank`,
+      type: "fill-blank",
+      categoryId: vocab.categoryId,
+      prompt: "____に行きます。",
+      instruction: "Ergänze den Satz.",
+      choices: orderDeterministically(directionChoices, `${vocab.id}:go-blank`),
+      answer: vocab.kanji,
+      vocabId: vocab.id,
+      exampleJapanese: goSentence.japanese,
+      exampleKana: goSentence.kana,
+      exampleGerman: goSentence.german,
+      shortTip: vocab.shortTip,
+      detailTip: vocab.detailTip,
+    },
+    buildCustomPhraseQuestion(vocab, "phrase-station", stationSentence, [
+      `駅は${opposite}です。`,
+      "駅は近いです。",
+      "駅は遠いです。",
+    ]),
+    buildCustomPhraseQuestion(vocab, "phrase-go", goSentence, [
+      `${opposite}に行きます。`,
+      "駅に行きます。",
+      "ホテルに行きます。",
+    ]),
+    buildCustomPhraseQuestion(vocab, "contrast", contrastSentence, [
+      `${vocab.kanji}ではありません。${opposite}です。`,
+      `${opposite}です。`,
+      `${vocab.kanji}です。`,
+    ]),
+    {
+      id: `practice-${vocab.id}-pair`,
+      type: "meaning-choice",
+      categoryId: vocab.categoryId,
+      prompt: `${vocab.kanji}と${opposite}`,
+      instruction: "Wähle die richtige Bedeutung.",
+      choices: orderDeterministically(
+        [`${vocab.german} und ${oppositeGerman}`, "nah und weit", "Bahnhof und Hotel", "Zug und Toilette"],
+        `${vocab.id}:pair`
+      ),
+      answer: `${vocab.german} und ${oppositeGerman}`,
+      vocabId: vocab.id,
+      exampleJapanese: `${vocab.kanji}と${opposite}`,
+      exampleGerman: `${vocab.german} und ${oppositeGerman}`,
+      shortTip: vocab.shortTip,
+      detailTip: vocab.detailTip,
+    },
+    buildCustomMeaningQuestion(vocab, "sentence-meaning-station", stationSentence, [
+      `Der Bahnhof ist ${oppositeGerman}.`,
+      "Der Bahnhof ist nah.",
+      "Der Bahnhof ist weit.",
+    ]),
+    buildCustomPhraseQuestion(
+      vocab,
+      "confirm",
+      confirmSentence,
+      [`すみません、駅は${opposite}ですか。`, stationSentence.japanese, "すみません、駅はどこですか。"],
+      "Mini Challenge: Wähle den vollständigen, höflichen Satz."
+    ),
+  ];
+}
+
+function buildRightPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  return buildDirectionWordPracticeQuestions(vocab, pool, {
+    opposite: "左",
+    oppositeGerman: "links",
+    oppositeRomaji: "hidari",
+    kana: "みぎ",
+    romaji: "migi",
+  });
+}
+
+function buildLeftPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  return buildDirectionWordPracticeQuestions(vocab, pool, {
+    opposite: "右",
+    oppositeGerman: "rechts",
+    oppositeRomaji: "migi",
+    kana: "ひだり",
+    romaji: "hidari",
+  });
+}
+
+/** Hand-curated 10-question Sub Quest for "hotel", avoiding the hotel/go example-sentence collision. */
+function buildHotelPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  const nearSentence: CustomSentencePair = {
+    japanese: "ホテルは近いです。",
+    german: "Das Hotel ist nah.",
+    kana: "ホテルはちかいです。",
+    romaji: "hoteru wa chikai desu",
+  };
+  const far = getVocabById("far");
+  const farSentence: CustomSentencePair = {
+    japanese: far?.exampleJapanese ?? "ホテルは遠いです。",
+    german: far?.exampleGerman ?? "Das Hotel ist weit entfernt.",
+    kana: far?.exampleKana ?? "ホテルはとおいです。",
+    romaji: EXAMPLE_ROMAJI.far ?? "hoteru wa tooi desu",
+  };
+  const comboSentence: CustomSentencePair = {
+    japanese: "電車でホテルに行きます。",
+    german: "Ich fahre mit dem Zug zum Hotel.",
+    kana: "でんしゃでホテルにいきます。",
+    romaji: "densha de hoteru ni ikimasu",
+  };
+  const whereSentence: CustomSentencePair = {
+    japanese: "ホテルはどこですか。",
+    german: "Wo ist das Hotel?",
+    kana: "ホテルはどこですか。",
+    romaji: "hoteru wa doko desu ka",
+  };
+  const confirmSentence: CustomSentencePair = {
+    japanese: "すみません、ホテルはどこですか。",
+    german: "Entschuldigung, wo ist das Hotel?",
+    kana: "すみません、ホテルはどこですか。",
+    romaji: "sumimasen, hoteru wa doko desu ka",
+  };
+
+  return [
+    buildMeaningChoiceQuestion(vocab, pool),
+    buildJapaneseChoiceQuestion(vocab, pool),
+    buildParticleChoiceQuestion(vocab),
+    buildFillBlankQuestion(vocab),
+    buildPhraseChoiceQuestion(vocab, pool),
+    buildCustomPhraseQuestion(vocab, "phrase-near", nearSentence, [
+      farSentence.japanese,
+      "駅は近いです。",
+      vocab.exampleJapanese,
+    ]),
+    buildCustomPhraseQuestion(vocab, "phrase-far", farSentence, [
+      nearSentence.japanese,
+      vocab.exampleJapanese,
+      "駅は遠いです。",
+    ]),
+    buildCustomPhraseQuestion(vocab, "combo", comboSentence, [
+      vocab.exampleJapanese,
+      "電車で駅に行きます。",
+      nearSentence.japanese,
+    ]),
+    {
+      id: "practice-hotel-where",
+      type: "meaning-choice",
+      categoryId: vocab.categoryId,
+      prompt: whereSentence.japanese,
+      instruction: "Wähle die richtige Übersetzung.",
+      choices: orderDeterministically(
+        [whereSentence.german, "Wo ist der Bahnhof?", "Wo ist die Toilette?", "Wo ist das Wasser?"],
+        "hotel:where"
+      ),
+      answer: whereSentence.german,
+      vocabId: vocab.id,
+      exampleJapanese: whereSentence.japanese,
+      exampleKana: whereSentence.kana,
+      exampleGerman: whereSentence.german,
+      shortTip: vocab.shortTip,
+      detailTip: vocab.detailTip,
+    },
+    buildCustomPhraseQuestion(
+      vocab,
+      "confirm",
+      confirmSentence,
+      [whereSentence.japanese, "すみません、駅はどこですか。", vocab.exampleJapanese],
+      "Mini Challenge: Wähle den vollständigen, höflichen Satz."
+    ),
+  ];
+}
+
+/** Hand-curated 10-question Sub Quest for "where", avoiding the where/station example-sentence collision. */
+function buildWherePracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  const hotelWhereSentence: CustomSentencePair = {
+    japanese: "ホテルはどこですか。",
+    german: "Wo ist das Hotel?",
+    kana: "ホテルはどこですか。",
+    romaji: "hoteru wa doko desu ka",
+  };
+  const toiletWhereSentence: CustomSentencePair = {
+    japanese: "すみません、トイレはどこですか。",
+    german: "Entschuldigung, wo ist die Toilette?",
+    kana: "すみません、トイレはどこですか。",
+    romaji: "sumimasen, toire wa doko desu ka",
+  };
+  const excuseMe = getVocabById("excuseMe");
+  const confirmSentence: CustomSentencePair = {
+    japanese: excuseMe?.exampleJapanese ?? "すみません、駅はどこですか。",
+    german: excuseMe?.exampleGerman ?? "Entschuldigung, wo ist der Bahnhof?",
+    kana: excuseMe?.exampleKana ?? "すみません、えきはどこですか。",
+    romaji: EXAMPLE_ROMAJI.excuseMe ?? "sumimasen, eki wa doko desu ka",
+  };
+
+  return [
+    buildMeaningChoiceQuestion(vocab, pool),
+    buildJapaneseChoiceQuestion(vocab, pool),
+    {
+      id: "practice-where-station-blank",
+      type: "fill-blank",
+      categoryId: vocab.categoryId,
+      prompt: "駅は____ですか。",
+      instruction: "Ergänze den Satz.",
+      choices: orderDeterministically(["どこ", "だれ", "いつ", "なに"], "where:station-blank"),
+      answer: "どこ",
+      vocabId: vocab.id,
+      exampleJapanese: vocab.exampleJapanese,
+      exampleKana: vocab.exampleKana,
+      exampleGerman: vocab.exampleGerman,
+      shortTip: vocab.shortTip,
+      detailTip: vocab.detailTip,
+    },
+    {
+      id: "practice-where-hotel-blank",
+      type: "fill-blank",
+      categoryId: vocab.categoryId,
+      prompt: "ホテルは____ですか。",
+      instruction: "Ergänze den Satz.",
+      choices: orderDeterministically(["どこ", "だれ", "いつ", "なに"], "where:hotel-blank"),
+      answer: "どこ",
+      vocabId: vocab.id,
+      exampleJapanese: hotelWhereSentence.japanese,
+      exampleKana: hotelWhereSentence.kana,
+      exampleGerman: hotelWhereSentence.german,
+      shortTip: vocab.shortTip,
+      detailTip: vocab.detailTip,
+    },
+    buildPhraseChoiceQuestion(vocab, pool),
+    buildCustomPhraseQuestion(vocab, "phrase-hotel", hotelWhereSentence, [
+      vocab.exampleJapanese,
+      "駅は近いです。",
+      "ホテルに行きます。",
+    ]),
+    buildCustomPhraseQuestion(vocab, "phrase-toilet", toiletWhereSentence, [
+      vocab.exampleJapanese,
+      hotelWhereSentence.japanese,
+      confirmSentence.japanese,
+    ]),
+    {
+      id: "practice-where-short",
+      type: "meaning-choice",
+      categoryId: vocab.categoryId,
+      prompt: "どこですか。",
+      instruction: "Wähle die richtige Übersetzung.",
+      choices: orderDeterministically(
+        ["Wo ist es?", "Es ist rechts.", "Ich gehe.", "Es ist nah."],
+        "where:short"
+      ),
+      answer: "Wo ist es?",
+      vocabId: vocab.id,
+      exampleJapanese: "どこですか。",
+      exampleGerman: "Wo ist es?",
+      shortTip: vocab.shortTip,
+      detailTip: vocab.detailTip,
+    },
+    buildSentenceMeaningChoiceQuestion(vocab, pool, { idSuffix: "-own" }),
+    buildCustomPhraseQuestion(
+      vocab,
+      "confirm",
+      confirmSentence,
+      [vocab.exampleJapanese, hotelWhereSentence.japanese, toiletWhereSentence.japanese],
+      "Mini Challenge: Wähle den vollständigen, höflichen Satz."
+    ),
+  ];
+}
+
+/** Hand-curated 10-question Sub Quest for "friend", avoiding the friend/meet example-sentence collision. */
+function buildFriendPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  const talk = getVocabById("talk");
+  const talkSentence: CustomSentencePair = {
+    japanese: talk?.exampleJapanese ?? "友だちと話します。",
+    german: talk?.exampleGerman ?? "Ich spreche mit einem Freund.",
+    kana: talk?.exampleKana ?? "ともだちとはなします。",
+    romaji: EXAMPLE_ROMAJI.talk ?? "tomodachi to hanashimasu",
+  };
+  const tomorrow = getVocabById("tomorrow");
+  const tomorrowSentence: CustomSentencePair = {
+    japanese: tomorrow?.exampleJapanese ?? "明日、友だちに会います。",
+    german: tomorrow?.exampleGerman ?? "Morgen treffe ich einen Freund.",
+    kana: tomorrow?.exampleKana ?? "あした、ともだちにあいます。",
+    romaji: EXAMPLE_ROMAJI.tomorrow ?? "ashita, tomodachi ni aimasu",
+  };
+  const like = getVocabById("like");
+  const likeSentence: CustomSentencePair = {
+    japanese: like?.exampleJapanese ?? "友だちが好きです。",
+    german: like?.exampleGerman ?? "Ich mag meine Freunde.",
+    kana: like?.exampleKana ?? "ともだちがすきです。",
+    romaji: EXAMPLE_ROMAJI.like ?? "tomodachi ga suki desu",
+  };
+
+  return [
+    buildMeaningChoiceQuestion(vocab, pool),
+    buildJapaneseChoiceQuestion(vocab, pool),
+    buildParticleChoiceQuestion(vocab),
+    {
+      id: "practice-friend-talk-blank",
+      type: "fill-blank",
+      categoryId: vocab.categoryId,
+      prompt: "友だちと____。",
+      instruction: "Ergänze den Satz.",
+      choices: orderDeterministically(["話します", "食べます", "飲みます", "行きます"], "friend:talk-blank"),
+      answer: "話します",
+      vocabId: vocab.id,
+      exampleJapanese: talkSentence.japanese,
+      exampleKana: talkSentence.kana,
+      exampleGerman: talkSentence.german,
+      shortTip: vocab.shortTip,
+      detailTip: vocab.detailTip,
+    },
+    buildPhraseChoiceQuestion(vocab, pool),
+    buildCustomPhraseQuestion(vocab, "phrase-talk", talkSentence, [
+      vocab.exampleJapanese,
+      likeSentence.japanese,
+      tomorrowSentence.japanese,
+    ]),
+    buildCustomPhraseQuestion(vocab, "phrase-tomorrow", tomorrowSentence, [
+      vocab.exampleJapanese,
+      talkSentence.japanese,
+      likeSentence.japanese,
+    ]),
+    buildCustomPhraseQuestion(vocab, "phrase-like", likeSentence, [
+      vocab.exampleJapanese,
+      talkSentence.japanese,
+      tomorrowSentence.japanese,
+    ]),
+    buildCustomMistakeQuestion(
+      vocab,
+      "usage-contrast",
+      "Ich treffe einen Freund.",
+      vocab.exampleJapanese,
+      [vocab.exampleJapanese, talkSentence.japanese, likeSentence.japanese, tomorrowSentence.japanese]
+    ),
+    buildCustomMeaningQuestion(
+      vocab,
+      "confirm",
+      tomorrowSentence,
+      ["Ich treffe einen Freund.", "Ich mag meine Freunde.", "Ich spreche mit einem Freund."],
+      "Mini Challenge: Was bedeutet dieser Satz?"
+    ),
+  ];
+}
+
+/** Hand-curated 10-question Sub Quest for "meet", avoiding the meet/friend example-sentence collision. */
+function buildMeetPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  const talk = getVocabById("talk");
+  const talkSentence: CustomSentencePair = {
+    japanese: talk?.exampleJapanese ?? "友だちと話します。",
+    german: talk?.exampleGerman ?? "Ich spreche mit einem Freund.",
+    kana: talk?.exampleKana ?? "ともだちとはなします。",
+    romaji: EXAMPLE_ROMAJI.talk ?? "tomodachi to hanashimasu",
+  };
+  const tomorrow = getVocabById("tomorrow");
+  const tomorrowSentence: CustomSentencePair = {
+    japanese: tomorrow?.exampleJapanese ?? "明日、友だちに会います。",
+    german: tomorrow?.exampleGerman ?? "Morgen treffe ich einen Freund.",
+    kana: tomorrow?.exampleKana ?? "あした、ともだちにあいます。",
+    romaji: EXAMPLE_ROMAJI.tomorrow ?? "ashita, tomodachi ni aimasu",
+  };
+  const todaySentence: CustomSentencePair = {
+    japanese: "今日、友だちに会います。",
+    german: "Heute treffe ich einen Freund.",
+    kana: "きょう、ともだちにあいます。",
+    romaji: "kyou, tomodachi ni aimasu",
+  };
+
+  return [
+    buildMeaningChoiceQuestion(vocab, pool),
+    buildJapaneseChoiceQuestion(vocab, pool),
+    buildParticleChoiceQuestion(vocab),
+    {
+      id: "practice-meet-tomorrow-blank",
+      type: "fill-blank",
+      categoryId: vocab.categoryId,
+      prompt: "明日、友だちに____。",
+      instruction: "Ergänze den Satz.",
+      choices: orderDeterministically(["会います", "話します", "食べます", "行きます"], "meet:tomorrow-blank"),
+      answer: "会います",
+      vocabId: vocab.id,
+      exampleJapanese: tomorrowSentence.japanese,
+      exampleKana: tomorrowSentence.kana,
+      exampleGerman: tomorrowSentence.german,
+      shortTip: vocab.shortTip,
+      detailTip: vocab.detailTip,
+    },
+    buildPhraseChoiceQuestion(vocab, pool),
+    buildCustomPhraseQuestion(vocab, "phrase-tomorrow", tomorrowSentence, [
+      vocab.exampleJapanese,
+      talkSentence.japanese,
+      todaySentence.japanese,
+    ]),
+    buildCustomPhraseQuestion(vocab, "phrase-talk", talkSentence, [
+      vocab.exampleJapanese,
+      tomorrowSentence.japanese,
+      todaySentence.japanese,
+    ]),
+    buildCustomMeaningQuestion(vocab, "today", todaySentence, [
+      "Ich treffe einen Freund.",
+      "Morgen treffe ich einen Freund.",
+      "Ich spreche mit einem Freund.",
+    ]),
+    buildCustomMistakeQuestion(
+      vocab,
+      "usage-contrast",
+      "Ich treffe einen Freund.",
+      vocab.exampleJapanese,
+      [vocab.exampleJapanese, talkSentence.japanese, todaySentence.japanese, tomorrowSentence.japanese]
+    ),
+    buildCustomPhraseQuestion(
+      vocab,
+      "confirm",
+      todaySentence,
+      [vocab.exampleJapanese, talkSentence.japanese, tomorrowSentence.japanese],
+      "Mini Challenge: Wähle den natürlichen Satz."
+    ),
+  ];
+}
+
+/** Light hand-curated 10-question Sub Quest for "japaneseLanguage", avoiding the japaneseLanguage/study example-sentence collision. */
+function buildJapaneseLanguagePracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  const todaySentence: CustomSentencePair = {
+    japanese: "今日、日本語を勉強します。",
+    german: "Heute lerne ich Japanisch.",
+    kana: "きょう、にほんごをべんきょうします。",
+    romaji: "kyou, nihongo o benkyou shimasu",
+  };
+  const languageSentence: CustomSentencePair = {
+    japanese: "日本語は言語です。",
+    german: "Japanisch ist eine Sprache.",
+    kana: "にほんごはげんごです。",
+    romaji: "nihongo wa gengo desu",
+  };
+  const speakSentence: CustomSentencePair = {
+    japanese: "日本語を話します。",
+    german: "Ich spreche Japanisch.",
+    kana: "にほんごをはなします。",
+    romaji: "nihongo o hanashimasu",
+  };
+
+  return [
+    buildMeaningChoiceQuestion(vocab, pool),
+    buildJapaneseChoiceQuestion(vocab, pool),
+    buildParticleChoiceQuestion(vocab),
+    buildFillBlankQuestion(vocab),
+    buildPhraseChoiceQuestion(vocab, pool),
+    buildCustomPhraseQuestion(vocab, "phrase-today", todaySentence, [
+      vocab.exampleJapanese,
+      speakSentence.japanese,
+      languageSentence.japanese,
+    ]),
+    buildCustomPhraseQuestion(vocab, "phrase-language", languageSentence, [
+      vocab.exampleJapanese,
+      todaySentence.japanese,
+      speakSentence.japanese,
+    ]),
+    buildCustomMeaningQuestion(vocab, "speak", speakSentence, [
+      "Ich lerne Japanisch.",
+      "Heute lerne ich Japanisch.",
+      "Japanisch ist eine Sprache.",
+    ]),
+    buildCustomMistakeQuestion(
+      vocab,
+      "usage-contrast",
+      "Ich lerne Japanisch.",
+      vocab.exampleJapanese,
+      [vocab.exampleJapanese, speakSentence.japanese, "日本語を食べます。", "日本語を飲みます。"]
+    ),
+    buildCustomMeaningQuestion(
+      vocab,
+      "confirm",
+      todaySentence,
+      ["Ich lerne Japanisch.", "Japanisch ist eine Sprache.", "Ich spreche Japanisch."],
+      "Mini Challenge: Was bedeutet dieser Satz?"
+    ),
+  ];
+}
+
 const SPECIAL_PRACTICE_BUILDERS: Partial<
   Record<string, (vocab: VocabItem, pool: VocabItem[]) => QuizQuestion[]>
 > = {
   water: buildWaterPracticeQuestions,
   station: buildStationPracticeQuestions,
+  right: buildRightPracticeQuestions,
+  left: buildLeftPracticeQuestions,
+  hotel: buildHotelPracticeQuestions,
+  where: buildWherePracticeQuestions,
+  friend: buildFriendPracticeQuestions,
+  meet: buildMeetPracticeQuestions,
+  japaneseLanguage: buildJapaneseLanguagePracticeQuestions,
 };
 
 /**
