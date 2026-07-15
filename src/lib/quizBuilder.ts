@@ -113,6 +113,16 @@ function buildJapaneseChoiceQuestion(vocab: VocabItem, pool: VocabItem[]): QuizQ
   };
 }
 
+/**
+ * Builds the instruction line for a fill-blank/particle-choice question, embedding the
+ * German meaning of the target sentence as a clue. Without this, a blank like "水を____。"
+ * has multiple equally natural completions (ください vs 飲みます) with nothing in the prompt
+ * to pick one over the other — the clue makes the intended answer the only one that matches.
+ */
+function buildBlankInstruction(germanClue: string): string {
+  return `Ergänze den Satz für „${germanClue}“.`;
+}
+
 function buildParticleChoiceQuestion(vocab: VocabItem): QuizQuestion {
   const sentence = vocab.exampleJapanese;
   const found = findParticle(sentence);
@@ -124,7 +134,7 @@ function buildParticleChoiceQuestion(vocab: VocabItem): QuizQuestion {
       type: "particle-choice",
       categoryId: vocab.categoryId,
       prompt: sentence,
-      instruction: "Ergänze den Satz.",
+      instruction: buildBlankInstruction(vocab.exampleGerman),
       choices: fallbackChoices,
       answer: fallbackChoices[0],
       vocabId: vocab.id,
@@ -140,7 +150,7 @@ function buildParticleChoiceQuestion(vocab: VocabItem): QuizQuestion {
     type: "particle-choice",
     categoryId: vocab.categoryId,
     prompt: blanked,
-    instruction: "Ergänze den Satz.",
+    instruction: buildBlankInstruction(vocab.exampleGerman),
     choices: orderDeterministically([particle, ...distractors], `${vocab.id}:particle`),
     answer: particle,
     vocabId: vocab.id,
@@ -162,7 +172,7 @@ function buildFillBlankQuestion(vocab: VocabItem): QuizQuestion {
     type: "fill-blank",
     categoryId: vocab.categoryId,
     prompt: blanked,
-    instruction: "Ergänze den Satz.",
+    instruction: buildBlankInstruction(vocab.exampleGerman),
     choices: orderDeterministically([predicate, ...distractors], `${vocab.id}:predicate`),
     answer: predicate,
     vocabId: vocab.id,
@@ -489,6 +499,97 @@ function buildGenericPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): Qui
   ];
 }
 
+/**
+ * Same shape as the generic template, but with a hand-picked, genuinely distinct sentence
+ * (`variant`) swapped in for the Q7/Q8 reinforcement pair instead of `findRelatedSentenceSource`'s
+ * fallback of repeating vocab's own sentence a second time. Used for a handful of words where a
+ * natural second sentence exists but no related word's stored example literally contains the
+ * target kanji, so the generic mechanism can't find it on its own.
+ */
+function buildVariantPracticeQuestions(
+  vocab: VocabItem,
+  pool: VocabItem[],
+  variant: CustomSentencePair
+): QuizQuestion[] {
+  const phraseDistractors = pickDistractors(
+    pool.map((item) => item.exampleJapanese),
+    variant.japanese,
+    3
+  );
+  const meaningDistractors = pickDistractors(
+    pool.map((item) => item.exampleGerman),
+    variant.german,
+    3
+  );
+
+  return [
+    buildMeaningChoiceQuestion(vocab, pool),
+    buildJapaneseChoiceQuestion(vocab, pool),
+    buildParticleChoiceQuestion(vocab),
+    buildFillBlankQuestion(vocab),
+    buildPhraseChoiceQuestion(vocab, pool),
+    buildSentenceMeaningChoiceQuestion(vocab, pool),
+    buildCustomPhraseQuestion(vocab, "phrase-2", variant, phraseDistractors),
+    buildCustomMeaningQuestion(vocab, "sentence-meaning-2", variant, meaningDistractors),
+    buildCommonMistakeQuestion(vocab),
+    buildKanaRecognitionQuestion(vocab, pool),
+  ];
+}
+
+function buildCoffeePracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  return buildVariantPracticeQuestions(vocab, pool, {
+    japanese: "コーヒーを飲みます。",
+    german: "Ich trinke Kaffee.",
+    kana: "コーヒーをのみます。",
+    romaji: "koohii o nomimasu",
+  });
+}
+
+function buildDrinkPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  return buildVariantPracticeQuestions(vocab, pool, {
+    japanese: "コーヒーを飲みます。",
+    german: "Ich trinke Kaffee.",
+    kana: "コーヒーをのみます。",
+    romaji: "koohii o nomimasu",
+  });
+}
+
+function buildGoPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  return buildVariantPracticeQuestions(vocab, pool, {
+    japanese: "駅に行きます。",
+    german: "Ich gehe zum Bahnhof.",
+    kana: "えきにいきます。",
+    romaji: "eki ni ikimasu",
+  });
+}
+
+function buildExcuseMePracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  return buildVariantPracticeQuestions(vocab, pool, {
+    japanese: "すみません、トイレはどこですか。",
+    german: "Entschuldigung, wo ist die Toilette?",
+    kana: "すみません、トイレはどこですか。",
+    romaji: "sumimasen, toire wa doko desu ka",
+  });
+}
+
+function buildNearPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  return buildVariantPracticeQuestions(vocab, pool, {
+    japanese: "ホテルは近いです。",
+    german: "Das Hotel ist nah.",
+    kana: "ホテルはちかいです。",
+    romaji: "hoteru wa chikai desu",
+  });
+}
+
+function buildFarPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
+  return buildVariantPracticeQuestions(vocab, pool, {
+    japanese: "駅は遠いです。",
+    german: "Der Bahnhof ist weit.",
+    kana: "えきはとおいです。",
+    romaji: "eki wa tooi desu",
+  });
+}
+
 /** Hand-curated 10-question Sub Quest for "water", following the natural sentences in the design brief. */
 function buildWaterPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQuestion[] {
   const drink = getVocabById("drink");
@@ -508,6 +609,28 @@ function buildWaterPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQ
     buildJapaneseChoiceQuestion(vocab, pool),
     buildParticleChoiceQuestion(vocab),
     buildFillBlankQuestion(vocab),
+    {
+      // Same "水を____。" frame as buildFillBlankQuestion's Q4 above, but with a different
+      // German clue pointing at a different verb (飲みます instead of ください) — two
+      // separate, each-unambiguous questions instead of one question where both answers
+      // would look equally correct with no clue to tell them apart.
+      id: "practice-water-drink-blank",
+      type: "fill-blank",
+      categoryId: vocab.categoryId,
+      prompt: "水を____。",
+      instruction: buildBlankInstruction(drinkGerman),
+      choices: orderDeterministically(
+        ["飲みます", "ください", "食べます", "行きます"],
+        "water:drink-blank"
+      ),
+      answer: "飲みます",
+      vocabId: vocab.id,
+      exampleJapanese: drinkJapanese,
+      exampleKana: drinkKana,
+      exampleGerman: drinkGerman,
+      shortTip: vocab.shortTip,
+      detailTip: vocab.detailTip,
+    },
     buildSentenceMeaningChoiceQuestion(vocab, pool, {
       idSuffix: "-drink",
       japanese: drinkJapanese,
@@ -515,27 +638,6 @@ function buildWaterPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQ
       kana: drinkKana,
     }),
     buildPhraseChoiceQuestion(vocab, pool),
-    {
-      id: "practice-water-phrase-drink",
-      type: "phrase-choice",
-      categoryId: vocab.categoryId,
-      prompt: drinkGerman,
-      instruction: "Wähle den natürlichen japanischen Satz.",
-      choices: orderDeterministically(
-        [drinkJapanese, vocab.exampleJapanese, "水を食べます。", "水に行きます。"],
-        "water:phrase-drink"
-      ),
-      answer: drinkJapanese,
-      vocabId: vocab.id,
-      answerKana: drinkKana,
-      answerRomaji: drinkRomaji,
-      answerGerman: drinkGerman,
-      exampleJapanese: drinkJapanese,
-      exampleKana: drinkKana,
-      exampleGerman: drinkGerman,
-      shortTip: vocab.shortTip,
-      detailTip: vocab.detailTip,
-    },
     {
       id: "practice-water-combo",
       type: "phrase-choice",
@@ -636,7 +738,7 @@ function buildStationPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): Qui
       type: "fill-blank",
       categoryId: vocab.categoryId,
       prompt: "すみません、駅は____ですか。",
-      instruction: "Ergänze den Satz.",
+      instruction: buildBlankInstruction(excuseMeGerman),
       choices: orderDeterministically(["どこ", "だれ", "いつ", "なに"], "station:where-word"),
       answer: "どこ",
       vocabId: vocab.id,
@@ -804,7 +906,7 @@ function buildDirectionWordPracticeQuestions(
       type: "fill-blank",
       categoryId: vocab.categoryId,
       prompt: "駅は____です。",
-      instruction: "Ergänze den Satz.",
+      instruction: buildBlankInstruction(stationSentence.german),
       choices: orderDeterministically(directionChoices, `${vocab.id}:station-blank`),
       answer: vocab.kanji,
       vocabId: vocab.id,
@@ -819,7 +921,7 @@ function buildDirectionWordPracticeQuestions(
       type: "fill-blank",
       categoryId: vocab.categoryId,
       prompt: "____に行きます。",
-      instruction: "Ergänze den Satz.",
+      instruction: buildBlankInstruction(goSentence.german),
       choices: orderDeterministically(directionChoices, `${vocab.id}:go-blank`),
       answer: vocab.kanji,
       vocabId: vocab.id,
@@ -1009,7 +1111,7 @@ function buildWherePracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQ
       type: "fill-blank",
       categoryId: vocab.categoryId,
       prompt: "駅は____ですか。",
-      instruction: "Ergänze den Satz.",
+      instruction: buildBlankInstruction(vocab.exampleGerman),
       choices: orderDeterministically(["どこ", "だれ", "いつ", "なに"], "where:station-blank"),
       answer: "どこ",
       vocabId: vocab.id,
@@ -1024,7 +1126,7 @@ function buildWherePracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQ
       type: "fill-blank",
       categoryId: vocab.categoryId,
       prompt: "ホテルは____ですか。",
-      instruction: "Ergänze den Satz.",
+      instruction: buildBlankInstruction(hotelWhereSentence.german),
       choices: orderDeterministically(["どこ", "だれ", "いつ", "なに"], "where:hotel-blank"),
       answer: "どこ",
       vocabId: vocab.id,
@@ -1106,7 +1208,7 @@ function buildFriendPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): Quiz
       type: "fill-blank",
       categoryId: vocab.categoryId,
       prompt: "友だちと____。",
-      instruction: "Ergänze den Satz.",
+      instruction: buildBlankInstruction(talkSentence.german),
       choices: orderDeterministically(["話します", "食べます", "飲みます", "行きます"], "friend:talk-blank"),
       answer: "話します",
       vocabId: vocab.id,
@@ -1181,7 +1283,7 @@ function buildMeetPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQu
       type: "fill-blank",
       categoryId: vocab.categoryId,
       prompt: "明日、友だちに____。",
-      instruction: "Ergänze den Satz.",
+      instruction: buildBlankInstruction(tomorrowSentence.german),
       choices: orderDeterministically(["会います", "話します", "食べます", "行きます"], "meet:tomorrow-blank"),
       answer: "会います",
       vocabId: vocab.id,
@@ -1295,6 +1397,12 @@ const SPECIAL_PRACTICE_BUILDERS: Partial<
   friend: buildFriendPracticeQuestions,
   meet: buildMeetPracticeQuestions,
   japaneseLanguage: buildJapaneseLanguagePracticeQuestions,
+  coffee: buildCoffeePracticeQuestions,
+  drink: buildDrinkPracticeQuestions,
+  go: buildGoPracticeQuestions,
+  excuseMe: buildExcuseMePracticeQuestions,
+  near: buildNearPracticeQuestions,
+  far: buildFarPracticeQuestions,
 };
 
 /**

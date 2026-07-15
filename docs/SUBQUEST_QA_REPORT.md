@@ -8,6 +8,48 @@
 - C: 5
 - D: 2
 
+## Fixed (second follow-up pass — multi-answer ambiguity + further dedup)
+
+A separate audit found a class of bug not covered by the first follow-up pass:
+**fill-blank / particle-choice questions with no German clue could have more than one
+naturally correct completion.** Example: `water`'s "水を____。" had choices
+[ください, 食べます, 飲みます, 行きます] with no context — both「ください」("please give
+me water") and「飲みます」("I drink water") are equally natural completions, so the
+question was genuinely ambiguous, not just hard.
+
+Fix applied in `src/lib/quizBuilder.ts`:
+
+1. **`buildBlankInstruction()`** — a new helper that embeds the target sentence's German
+   meaning into the instruction line (e.g. `Ergänze den Satz für „Wasser bitte.“.`). Wired
+   into `buildFillBlankQuestion()` and `buildParticleChoiceQuestion()` generically, so every
+   word using the generic template (the majority of the 26) automatically gets a
+   disambiguating clue — no per-word special-casing needed. Also applied to every
+   hand-curated template's fill-blank-style questions that lacked one: `right`/`left`'s
+   station/go blanks, `friend`'s talk blank, `meet`'s tomorrow blank, `station`'s and
+   `where`'s word-blanks.
+2. **`water`'s template redesigned** to use the same "水を____。" frame *twice*, each with a
+   different German clue pointing at a different correct verb: Q4 clue "Wasser bitte." →
+   ください; Q5 (new) clue "Ich trinke Wasser." → 飲みます. This directly resolves the
+   originally-reported bug while keeping both verbs tested. The old Q5 (sentence-meaning,
+   飲みます JP→DE) shifted to Q6, and the old "phrase-drink" full-sentence question was
+   dropped (redundant with the new Q5) to keep the total at 10.
+
+Further dedup, addressing "サブクエストの問題が重複している" more broadly: 6 more generic-
+template words (`coffee`, `drink`, `go`, `excuseMe`, `near`, `far`) got a light hand-curated
+Q7/Q8 pair (`buildVariantPracticeQuestions`) using a genuinely different, hand-picked sentence
+instead of `findRelatedSentenceSource()`'s reworded-repeat fallback — e.g. `coffee`'s Q7/Q8 now
+test "コーヒーを飲みます。" (a new sentence) instead of repeating "コーヒーをください。" a
+second time. The remaining generic-template words (`train`, `toilet`, `teacher`, `study`,
+`today`, `talk`, `tomorrow`, `like`) were left as-is — their Q7/Q8 repeat is reworded and
+correct, matching the original QA report's "B — keep generic template" recommendation; a
+synthetic second sentence wasn't available for them without inventing new vocabData content.
+
+Verified: `npm run build` / `npm run lint` pass; a script re-checked all 26
+`buildPracticeQuestions()` outputs for the original 10-question/4-choice/no-duplicate-choice/
+romaji criteria, **plus**: no fill-blank/particle-choice question has the bare
+"Ergänze den Satz." instruction (i.e. every one now carries a disambiguating clue), and
+`water`'s two "水を____。" questions have distinct clues and distinct answers.
+
 **Status: original findings below (pre-fix). See "Fixed (follow-up pass)" for what changed.**
 
 ## Fixed (follow-up pass)

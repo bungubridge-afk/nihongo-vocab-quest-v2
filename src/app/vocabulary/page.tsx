@@ -210,6 +210,26 @@ export default function VocabularyPage() {
   );
 }
 
+/** Minimal inline speaker icon — no icon library dependency. */
+function SpeakerIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M11 5 6 9H2v6h4l5 4V5Z" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+    </svg>
+  );
+}
+
 interface VocabCardProps {
   vocab: VocabItem;
   status: CardStatus;
@@ -230,20 +250,33 @@ function VocabCard({ vocab, status, onPractice }: VocabCardProps) {
         <Badge variant={RARITY_BADGE_VARIANT[vocab.rarity]}>{RARITY_LABEL[vocab.rarity]}</Badge>
       </div>
 
-      <div>
-        <p
-          className={
-            isHidden
-              ? "text-2xl font-extrabold text-[var(--color-locked)]"
-              : "text-2xl font-extrabold text-[var(--color-ink)]"
-          }
-        >
-          {isHidden ? "???" : vocab.kanji}
-        </p>
-        {!isHidden ? (
-          <p className="text-sm text-[var(--color-ink-soft)]">
-            {vocab.kana} · {vocab.romaji} · {vocab.german}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p
+            className={
+              isHidden
+                ? "text-2xl font-extrabold text-[var(--color-locked)]"
+                : "text-2xl font-extrabold text-[var(--color-ink)]"
+            }
+          >
+            {isHidden ? "???" : vocab.kanji}
           </p>
+          {!isHidden ? (
+            <p className="text-sm text-[var(--color-ink-soft)]">
+              {vocab.kana} · {vocab.romaji} · {vocab.german}
+            </p>
+          ) : null}
+        </div>
+        {!isHidden ? (
+          <button
+            type="button"
+            onClick={() => speakJapanese(vocab.kanji)}
+            aria-label="Aussprache hören"
+            title="Aussprache hören"
+            className="tap-scale shrink-0 rounded-full border-2 border-[var(--color-secondary-border)] bg-white p-2 text-[var(--color-primary-dark)] hover:border-[var(--color-primary)]"
+          >
+            <SpeakerIcon className="h-4 w-4" />
+          </button>
         ) : null}
       </div>
 
@@ -289,17 +322,7 @@ function VocabCard({ vocab, status, onPractice }: VocabCardProps) {
         </>
       )}
 
-      <div className="mt-auto flex flex-col gap-2">
-        {!isHidden ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => speakJapanese(vocab.kanji)}
-            className="w-full"
-          >
-            Anhören
-          </Button>
-        ) : null}
+      <div className="mt-auto">
         <Button
           variant={isHidden ? "locked" : "primary"}
           size="sm"
