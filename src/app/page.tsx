@@ -311,17 +311,30 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
 
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
           <div className="flex-1">
+            <div className="mb-5">
+              <p className="text-xs font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
+                Starter Quest
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-extrabold text-[var(--color-ink)]">Block 1</h2>
+                <Badge variant="green">5 Units</Badge>
+              </div>
+              <p className="text-sm text-[var(--color-ink-soft)]">Erste Schritte in Japan</p>
+            </div>
+
             <QuestMapList
               completedCategories={completedCategories}
               unlockedCategories={unlockedCategories}
               nextCategory={nextCategory}
               onStartCategory={(categoryId) => router.push(`/lesson?category=${categoryId}`)}
             />
+
+            <Block2Preview />
           </div>
 
           <aside className="flex w-full flex-col gap-4 lg:w-72">
             <Card variant="default">
-              <p className="font-bold text-[var(--color-ink)]">Fortschritt</p>
+              <p className="font-bold text-[var(--color-ink)]">Block-Fortschritt</p>
               <p className="mt-2 text-sm text-[var(--color-ink)]">
                 {completedCategories.length} / 5 Kategorien
               </p>
@@ -330,8 +343,8 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
               </p>
             </Card>
 
-            <Card variant="default">
-              <p className="font-bold text-[var(--color-ink)]">Wiederholung</p>
+            <Card variant="default" onClick={() => router.push("/review")}>
+              <p className="font-bold text-[var(--color-ink)]">Trainingslager</p>
               <Badge variant={weakWords.length > 0 ? "yellow" : "gray"} className="mt-2">
                 {weakWords.length > 0 ? `${weakWords.length} Wörter` : "Bereit"}
               </Badge>
@@ -354,6 +367,23 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
         </div>
       </div>
     </main>
+  );
+}
+
+function Block2Preview() {
+  return (
+    <div className="mt-8">
+      <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
+        Nächster Block
+      </p>
+      <Card variant="locked" className="mt-2 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-bold text-[var(--color-locked)]">Block 2: Daily Life</p>
+          <p className="text-sm text-[var(--color-locked)]">Mit Hör-Quest</p>
+        </div>
+        <Badge variant="locked">Demnächst</Badge>
+      </Card>
+    </div>
   );
 }
 
@@ -405,6 +435,7 @@ function QuestMapList({
 
         const canStart = status !== "locked";
         const cardCount = category.collectedCardIds.length || undefined;
+        const isFinale = isReviewCategory;
 
         return (
           <div key={category.id}>
@@ -415,6 +446,8 @@ function QuestMapList({
               rewardXp={category.rewardXp}
               cardCount={cardCount}
               onStart={canStart ? () => onStartCategory(category.id) : undefined}
+              flip={index % 2 === 1}
+              isFinale={isFinale}
             />
             {index < CATEGORY_ORDER.length - 1 ? (
               <div className="quest-map-line ml-[26px] h-6" />
