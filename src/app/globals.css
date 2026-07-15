@@ -54,22 +54,90 @@ body {
 }
 
 /* ===== Adventure Quest Map ===== */
+/*
+ * Scalable layout: one independent flow row per stage (`.quest-row`), each with its own
+ * minimum height. Nothing is absolutely positioned relative to a shared, hand-measured
+ * canvas — so adding stage #101 later just adds row #101; nothing else has to be
+ * recomputed, and rows can never bleed into each other.
+ */
 
-/* Map canvas: soft sky-to-meadow gradient with a warm sunrise glow in the corner. */
-.quest-map {
+.quest-map-scroll {
   position: relative;
-  overflow: hidden;
   border: 1px solid var(--color-secondary-border);
   border-radius: 28px;
-  background:
-    radial-gradient(circle at 80% 3%, rgba(251, 240, 217, 0.95), transparent 32%),
-    linear-gradient(180deg, #eaf3ff 0%, #f0f6ec 42%, #f8f3e6 74%, #e9ecf3 100%);
+  background: linear-gradient(180deg, #eaf3ff 0%, #f0f6ec 55%, #f6f2e6 100%);
+  padding: 0.5rem 0 1.25rem;
   box-shadow: 0 10px 26px -18px var(--color-card-shadow);
 }
 
-/* Decorative layers (clouds, mountains, winding road SVG) never intercept taps. */
-.quest-map-deco,
-.quest-map-path {
+.quest-start-row {
+  position: relative;
+  height: 74px;
+}
+
+.quest-start-connector {
+  position: absolute;
+  top: 58px;
+  bottom: 0;
+  width: 4px;
+  background: var(--color-secondary-border);
+  transform: translateX(-50%);
+}
+
+.quest-start-marker {
+  position: absolute;
+  top: 24px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 2;
+}
+
+.quest-start-icon {
+  display: flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 2px solid var(--color-gold-border);
+  background: var(--color-gold-soft);
+  color: var(--color-gold);
+  box-shadow: 0 4px 10px -6px var(--color-card-shadow);
+}
+
+.quest-start-label {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+}
+
+/* Each stage's own row. Heights below match the brief's target center-to-center spacing
+   at each breakpoint; they only ever grow the map's total height, never shrink a
+   neighboring row. */
+.quest-row {
+  position: relative;
+  min-height: 210px;
+}
+
+@media (min-width: 640px) {
+  .quest-row {
+    min-height: 250px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .quest-row {
+    min-height: 300px;
+  }
+}
+
+.quest-row-path {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -86,16 +154,32 @@ body {
   stroke-dasharray: 0.5 11;
 }
 
-/* Landmark node anchored on the path (parent sets top/left in %). */
-.quest-node-root {
+/* The node sits at the row's exact vertical center — the same point the road's curve
+   targets (see `rowRoadPath` in QuestMap.tsx) — leaving equal clearance above and below
+   before the row's own edge, so its label can never reach into the next stage's row. */
+.quest-row-node {
   position: absolute;
+  top: 50%;
   transform: translate(-50%, -50%);
+  z-index: 2;
 }
 
 .quest-node-circle {
   position: relative;
   z-index: 2;
   box-shadow: 0 8px 18px -10px var(--color-card-shadow);
+}
+
+.quest-node-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.quest-node-selected .quest-node-circle {
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 6px var(--color-ink),
+    0 8px 18px -10px var(--color-card-shadow);
 }
 
 .quest-node-glow {
@@ -185,64 +269,84 @@ body {
   border-top-color: var(--color-ink);
 }
 
-/* Info panel docked beside (or under) the landmark circle. */
-.quest-node-panel {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  width: clamp(9.5rem, 44vw, 13.5rem);
-  background: #fff;
-  border: 1px solid var(--color-secondary-border);
-  border-radius: 16px;
-  padding: 10px 12px;
-  box-shadow: 0 8px 20px -14px var(--color-card-shadow);
-}
-
-.quest-node-panel-right {
-  left: calc(100% + 14px);
-}
-
-.quest-node-panel-left {
-  right: calc(100% + 14px);
-}
-
-.quest-node-panel-center {
-  top: calc(100% + 14px);
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  width: clamp(11rem, 62vw, 16rem);
-}
-
-.quest-node-panel-locked {
-  background: var(--color-locked-bg);
-}
-
-.quest-node-panel-finale {
-  border: 2px solid var(--color-gold-border);
-  box-shadow: 0 10px 24px -14px rgba(201, 138, 31, 0.55);
-}
-
 /* Locked stages sit behind a light mist: grayed out but still readable. */
 .quest-node-mist {
   opacity: 0.74;
   filter: grayscale(0.55);
 }
 
-/* Fog band at the bottom of the map: the road fades into the next, unopened region. */
-.quest-map-fog {
+/* ===== Next-area preview (below the map) ===== */
+
+.next-area-connector {
+  position: relative;
+  height: 28px;
+}
+
+.next-area-connector::before {
+  content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  background: linear-gradient(
+  top: 0;
+  bottom: -1px;
+  left: 50%;
+  width: 4px;
+  background: repeating-linear-gradient(
     180deg,
-    rgba(233, 236, 243, 0) 0%,
-    rgba(233, 236, 243, 0.85) 42%,
-    #e6e9f1 100%
+    #c3cbdd 0 6px,
+    transparent 6px 11px
   );
+  transform: translateX(-50%);
+}
+
+/* ===== Home layout grid =====
+ * One grid, two shapes: on mobile everything stacks in a single column in the order the
+ * brief asks for (status card → selected stage → map → progress → training); from lg up,
+ * the same five areas re-flow into a wide map column plus a narrower stacked sidebar,
+ * without moving anything in the markup itself. */
+.home-grid {
+  display: grid;
+  gap: 1.75rem;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "levelcard"
+    "details"
+    "map"
+    "progress"
+    "training";
+}
+
+@media (min-width: 1024px) {
+  .home-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    column-gap: 2rem;
+    row-gap: 1.5rem;
+    grid-template-areas:
+      "map levelcard"
+      "map details"
+      "map progress"
+      "map training";
+    align-items: start;
+  }
+}
+
+.home-area-map {
+  grid-area: map;
+  min-width: 0;
+}
+
+.home-area-levelcard {
+  grid-area: levelcard;
+}
+
+.home-area-details {
+  grid-area: details;
+}
+
+.home-area-progress {
+  grid-area: progress;
+}
+
+.home-area-training {
+  grid-area: training;
 }
 
 /* ===== Result / XP feedback ===== */

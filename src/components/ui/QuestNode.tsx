@@ -1,31 +1,19 @@
-import type { CSSProperties } from "react";
-import { Badge } from "@/components/ui/Badge";
-import type { BadgeVariant } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-
 export type QuestNodeStatus = "current" | "completed" | "unlocked" | "locked" | "review";
-
-/** Which side of the landmark circle the info panel sits on ("center" = below, for the finale). */
-export type QuestNodeSide = "left" | "right" | "center";
 
 export type QuestStageIcon = "cafe" | "reise" | "schule" | "freunde" | "finale";
 
 export interface QuestNodeProps {
   title: string;
-  subtitle?: string;
   status: QuestNodeStatus;
-  rewardXp?: number;
-  cardCount?: number;
-  onStart?: () => void;
   /** Landmark icon for this stage (cup, suitcase, book, speech bubbles, gate). */
   stageIcon: QuestStageIcon;
-  /** Side the info panel opens to; the parent alternates this along the winding path. */
-  side?: QuestNodeSide;
-  /** The final destination (Finale Wiederholung): bigger gate landmark, special framing. */
+  /** The final destination (Finale Wiederholung): bigger gate landmark, gold framing. */
   isFinale?: boolean;
+  /** Whether this node's details are currently shown in the side/detail panel. */
+  isSelected?: boolean;
+  /** Selecting a node only switches the detail panel — it never navigates by itself. */
+  onSelect: () => void;
   className?: string;
-  /** Anchor position on the map (e.g. `{ left: "24%", top: "15%" }`), set by the parent. */
-  style?: CSSProperties;
 }
 
 const STATUS_LABEL: Record<QuestNodeStatus, string> = {
@@ -34,14 +22,6 @@ const STATUS_LABEL: Record<QuestNodeStatus, string> = {
   unlocked: "Bereit",
   locked: "Gesperrt",
   review: "Bereit",
-};
-
-const STATUS_BADGE_VARIANT: Record<QuestNodeStatus, BadgeVariant> = {
-  current: "green",
-  completed: "green",
-  unlocked: "green",
-  locked: "locked",
-  review: "yellow",
 };
 
 const CIRCLE_STATUS_CLASSES: Record<QuestNodeStatus, string> = {
@@ -56,7 +36,7 @@ const CIRCLE_STATUS_CLASSES: Record<QuestNodeStatus, string> = {
     "bg-[var(--color-gold-soft)] border-[var(--color-gold)] text-[var(--color-gold)] quest-node-glow-gold",
 };
 
-function StageIcon({ icon, className }: { icon: QuestStageIcon; className?: string }) {
+export function StageIcon({ icon, className }: { icon: QuestStageIcon; className?: string }) {
   const shared = {
     viewBox: "0 0 24 24",
     fill: "none",
@@ -118,7 +98,15 @@ function StageIcon({ icon, className }: { icon: QuestStageIcon; className?: stri
 function CheckMiniBadge() {
   return (
     <span className="quest-node-mini quest-node-mini-check" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-3 w-3"
+      >
         <path d="M4 12.5l5 5L20 6.5" />
       </svg>
     </span>
@@ -128,7 +116,15 @@ function CheckMiniBadge() {
 function LockMiniBadge() {
   return (
     <span className="quest-node-mini quest-node-mini-lock" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-3 w-3"
+      >
         <rect x="5" y="11" width="14" height="9" rx="2" />
         <path d="M8 11V8a4 4 0 0 1 8 0v3" />
       </svg>
@@ -139,7 +135,15 @@ function LockMiniBadge() {
 function HereMarker() {
   return (
     <div className="quest-node-here" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-3.5 w-3.5"
+      >
         <path d="M5 21V4" />
         <path d="M5 4h11l-2.5 3.5L16 11H5" fill="currentColor" stroke="none" />
       </svg>
@@ -149,21 +153,19 @@ function HereMarker() {
 }
 
 /**
- * A landmark node on the adventure map: a stage circle with its icon plus a small info
- * panel to the side. Positioned by the parent (absolute anchor on the winding path).
+ * A landmark button on the adventure map: a stage circle with its icon plus a short
+ * name/status label underneath. That's it — no description, no reward numbers, no
+ * Starten button. Those live in `QuestStageDetails`, reached by selecting this node.
+ * A plain `<button>` gets keyboard activation (Enter/Space) for free.
  */
 export function QuestNode({
   title,
-  subtitle,
   status,
-  rewardXp,
-  cardCount,
-  onStart,
   stageIcon,
-  side = "right",
   isFinale = false,
+  isSelected = false,
+  onSelect,
   className,
-  style,
 }: QuestNodeProps) {
   const isLocked = status === "locked";
   const isCompleted = status === "completed";
@@ -179,19 +181,22 @@ export function QuestNode({
     .filter(Boolean)
     .join(" ");
 
-  const panelClasses = [
-    "quest-node-panel",
-    side === "left" ? "quest-node-panel-left" : "",
-    side === "right" ? "quest-node-panel-right" : "",
-    side === "center" ? "quest-node-panel-center" : "",
-    isLocked ? "quest-node-panel-locked quest-node-mist" : "",
-    isFinale && !isLocked ? "quest-node-panel-finale" : "",
+  const buttonClasses = [
+    "quest-node-button tap-scale flex cursor-pointer flex-col items-center gap-1 rounded-2xl px-2 py-1 text-center",
+    isSelected ? "quest-node-selected" : "",
+    className,
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div className={["quest-node-root", className].filter(Boolean).join(" ")} style={style}>
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={isSelected}
+      aria-label={`${title} – ${statusLabel}`}
+      className={buttonClasses}
+    >
       {status === "current" ? <HereMarker /> : null}
 
       <div className={circleClasses}>
@@ -200,49 +205,10 @@ export function QuestNode({
         {isLocked ? <LockMiniBadge /> : null}
       </div>
 
-      <div className={panelClasses}>
-        <p
-          className={
-            isFinale
-              ? "text-sm font-extrabold text-[var(--color-ink)] sm:text-base"
-              : "text-sm font-bold text-[var(--color-ink)]"
-          }
-        >
-          {title}
-        </p>
-        {subtitle ? (
-          <p className="mt-0.5 text-xs leading-snug text-[var(--color-ink-soft)]">{subtitle}</p>
-        ) : null}
-
-        <div
-          className={[
-            "mt-1.5 flex flex-wrap items-center gap-1.5",
-            side === "center" ? "justify-center" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-        >
-          <Badge variant={STATUS_BADGE_VARIANT[status]}>{statusLabel}</Badge>
-          {typeof rewardXp === "number" || typeof cardCount === "number" ? (
-            <span className="text-[11px] font-semibold text-[var(--color-ink-soft)]">
-              {typeof rewardXp === "number" ? `+${rewardXp} XP` : null}
-              {typeof rewardXp === "number" && typeof cardCount === "number" ? " · " : null}
-              {typeof cardCount === "number" ? `${cardCount} Karten` : null}
-            </span>
-          ) : null}
-        </div>
-
-        {onStart && !isLocked ? (
-          <Button
-            variant={isCompleted ? "secondary" : "primary"}
-            size="sm"
-            onClick={onStart}
-            className="mt-2 w-full"
-          >
-            {isCompleted ? "Wiederholen" : "Starten"}
-          </Button>
-        ) : null}
-      </div>
-    </div>
+      <p className="max-w-[6.5rem] text-xs leading-tight font-bold text-[var(--color-ink)] sm:text-sm">
+        {title}
+      </p>
+      <p className="text-[11px] font-semibold text-[var(--color-ink-soft)]">{statusLabel}</p>
+    </button>
   );
 }
