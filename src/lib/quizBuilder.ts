@@ -113,14 +113,19 @@ function buildJapaneseChoiceQuestion(vocab: VocabItem, pool: VocabItem[]): QuizQ
   };
 }
 
+/** Plain instruction used for every fill-blank/particle-choice question — the disambiguating German clue now lives in the prompt itself (see `buildBlankPrompt`), not here. */
+const BLANK_INSTRUCTION = "Ergänze den Satz.";
+
 /**
- * Builds the instruction line for a fill-blank/particle-choice question, embedding the
- * German meaning of the target sentence as a clue. Without this, a blank like "水を____。"
- * has multiple equally natural completions (ください vs 飲みます) with nothing in the prompt
- * to pick one over the other — the clue makes the intended answer the only one that matches.
+ * Combines a German clue with the Japanese fill-in-the-blank line into a single two-line
+ * prompt (rendered with `whitespace-pre-line` in lesson/practice pages), so the clue that
+ * disambiguates the answer is part of the large, primary prompt text — not tucked away in
+ * the small instruction line where it's easy to skim past. Without a clue, a blank like
+ * "水を____。" has multiple equally natural completions (ください vs 飲みます) with nothing
+ * in the prompt itself to pick one over the other.
  */
-function buildBlankInstruction(germanClue: string): string {
-  return `Ergänze den Satz für „${germanClue}“.`;
+function buildBlankPrompt(germanClue: string, japaneseBlank: string): string {
+  return `„${germanClue}“\n${japaneseBlank}`;
 }
 
 function buildParticleChoiceQuestion(vocab: VocabItem): QuizQuestion {
@@ -133,8 +138,8 @@ function buildParticleChoiceQuestion(vocab: VocabItem): QuizQuestion {
       id: `practice-${vocab.id}-particle`,
       type: "particle-choice",
       categoryId: vocab.categoryId,
-      prompt: sentence,
-      instruction: buildBlankInstruction(vocab.exampleGerman),
+      prompt: buildBlankPrompt(vocab.exampleGerman, sentence),
+      instruction: BLANK_INSTRUCTION,
       choices: fallbackChoices,
       answer: fallbackChoices[0],
       vocabId: vocab.id,
@@ -149,8 +154,8 @@ function buildParticleChoiceQuestion(vocab: VocabItem): QuizQuestion {
     id: `practice-${vocab.id}-particle`,
     type: "particle-choice",
     categoryId: vocab.categoryId,
-    prompt: blanked,
-    instruction: buildBlankInstruction(vocab.exampleGerman),
+    prompt: buildBlankPrompt(vocab.exampleGerman, blanked),
+    instruction: BLANK_INSTRUCTION,
     choices: orderDeterministically([particle, ...distractors], `${vocab.id}:particle`),
     answer: particle,
     vocabId: vocab.id,
@@ -171,8 +176,8 @@ function buildFillBlankQuestion(vocab: VocabItem): QuizQuestion {
     id: `practice-${vocab.id}-predicate`,
     type: "fill-blank",
     categoryId: vocab.categoryId,
-    prompt: blanked,
-    instruction: buildBlankInstruction(vocab.exampleGerman),
+    prompt: buildBlankPrompt(vocab.exampleGerman, blanked),
+    instruction: BLANK_INSTRUCTION,
     choices: orderDeterministically([predicate, ...distractors], `${vocab.id}:predicate`),
     answer: predicate,
     vocabId: vocab.id,
@@ -370,15 +375,21 @@ function buildCommonMistakeQuestion(vocab: VocabItem): QuizQuestion {
   };
 }
 
-/** Mini-challenge reading check: given the kana, pick the matching kanji/katakana form. */
+/**
+ * Mini-challenge reading check: given the romaji, pick the matching Japanese spelling. Uses
+ * romaji rather than kana for the prompt — for katakana/hiragana-only words (e.g. コーヒー,
+ * すみません) the kana and kanji fields are identical, which would make the prompt literally
+ * equal to its own answer (a copy-match, not a real recognition question). Romaji is always a
+ * distinct string from the kanji/kana form, so this is safe for every word.
+ */
 function buildKanaRecognitionQuestion(vocab: VocabItem, pool: VocabItem[]): QuizQuestion {
   const distractors = pickDistractors(pool.map((item) => item.kanji), vocab.kanji, 3);
   return {
     id: `practice-${vocab.id}-kana`,
     type: "kana-choice",
     categoryId: vocab.categoryId,
-    prompt: vocab.kana,
-    instruction: "Mini Challenge: Wie schreibt man das?",
+    prompt: vocab.romaji,
+    instruction: "Mini Challenge: Welche japanische Schreibweise ist richtig?",
     choices: orderDeterministically([vocab.kanji, ...distractors], `${vocab.id}:kana`),
     answer: vocab.kanji,
     vocabId: vocab.id,
@@ -617,8 +628,8 @@ function buildWaterPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQ
       id: "practice-water-drink-blank",
       type: "fill-blank",
       categoryId: vocab.categoryId,
-      prompt: "水を____。",
-      instruction: buildBlankInstruction(drinkGerman),
+      prompt: buildBlankPrompt(drinkGerman, "水を____。"),
+      instruction: BLANK_INSTRUCTION,
       choices: orderDeterministically(
         ["飲みます", "ください", "食べます", "行きます"],
         "water:drink-blank"
@@ -737,8 +748,8 @@ function buildStationPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): Qui
       id: "practice-station-where-word",
       type: "fill-blank",
       categoryId: vocab.categoryId,
-      prompt: "すみません、駅は____ですか。",
-      instruction: buildBlankInstruction(excuseMeGerman),
+      prompt: buildBlankPrompt(excuseMeGerman, "すみません、駅は____ですか。"),
+      instruction: BLANK_INSTRUCTION,
       choices: orderDeterministically(["どこ", "だれ", "いつ", "なに"], "station:where-word"),
       answer: "どこ",
       vocabId: vocab.id,
@@ -905,8 +916,8 @@ function buildDirectionWordPracticeQuestions(
       id: `practice-${vocab.id}-station-blank`,
       type: "fill-blank",
       categoryId: vocab.categoryId,
-      prompt: "駅は____です。",
-      instruction: buildBlankInstruction(stationSentence.german),
+      prompt: buildBlankPrompt(stationSentence.german, "駅は____です。"),
+      instruction: BLANK_INSTRUCTION,
       choices: orderDeterministically(directionChoices, `${vocab.id}:station-blank`),
       answer: vocab.kanji,
       vocabId: vocab.id,
@@ -920,8 +931,8 @@ function buildDirectionWordPracticeQuestions(
       id: `practice-${vocab.id}-go-blank`,
       type: "fill-blank",
       categoryId: vocab.categoryId,
-      prompt: "____に行きます。",
-      instruction: buildBlankInstruction(goSentence.german),
+      prompt: buildBlankPrompt(goSentence.german, "____に行きます。"),
+      instruction: BLANK_INSTRUCTION,
       choices: orderDeterministically(directionChoices, `${vocab.id}:go-blank`),
       answer: vocab.kanji,
       vocabId: vocab.id,
@@ -1110,8 +1121,8 @@ function buildWherePracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQ
       id: "practice-where-station-blank",
       type: "fill-blank",
       categoryId: vocab.categoryId,
-      prompt: "駅は____ですか。",
-      instruction: buildBlankInstruction(vocab.exampleGerman),
+      prompt: buildBlankPrompt(vocab.exampleGerman, "駅は____ですか。"),
+      instruction: BLANK_INSTRUCTION,
       choices: orderDeterministically(["どこ", "だれ", "いつ", "なに"], "where:station-blank"),
       answer: "どこ",
       vocabId: vocab.id,
@@ -1125,8 +1136,8 @@ function buildWherePracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQ
       id: "practice-where-hotel-blank",
       type: "fill-blank",
       categoryId: vocab.categoryId,
-      prompt: "ホテルは____ですか。",
-      instruction: buildBlankInstruction(hotelWhereSentence.german),
+      prompt: buildBlankPrompt(hotelWhereSentence.german, "ホテルは____ですか。"),
+      instruction: BLANK_INSTRUCTION,
       choices: orderDeterministically(["どこ", "だれ", "いつ", "なに"], "where:hotel-blank"),
       answer: "どこ",
       vocabId: vocab.id,
@@ -1207,8 +1218,8 @@ function buildFriendPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): Quiz
       id: "practice-friend-talk-blank",
       type: "fill-blank",
       categoryId: vocab.categoryId,
-      prompt: "友だちと____。",
-      instruction: buildBlankInstruction(talkSentence.german),
+      prompt: buildBlankPrompt(talkSentence.german, "友だちと____。"),
+      instruction: BLANK_INSTRUCTION,
       choices: orderDeterministically(["話します", "食べます", "飲みます", "行きます"], "friend:talk-blank"),
       answer: "話します",
       vocabId: vocab.id,
@@ -1282,8 +1293,8 @@ function buildMeetPracticeQuestions(vocab: VocabItem, pool: VocabItem[]): QuizQu
       id: "practice-meet-tomorrow-blank",
       type: "fill-blank",
       categoryId: vocab.categoryId,
-      prompt: "明日、友だちに____。",
-      instruction: buildBlankInstruction(tomorrowSentence.german),
+      prompt: buildBlankPrompt(tomorrowSentence.german, "明日、友だちに____。"),
+      instruction: BLANK_INSTRUCTION,
       choices: orderDeterministically(["会います", "話します", "食べます", "行きます"], "meet:tomorrow-blank"),
       answer: "会います",
       vocabId: vocab.id,

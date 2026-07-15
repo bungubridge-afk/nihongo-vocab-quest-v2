@@ -274,7 +274,7 @@ function PracticeSession({ vocab, onBack }: PracticeSessionProps) {
           <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
             {currentQuestion.instruction}
           </p>
-          <p className="mt-2 text-2xl font-extrabold text-[var(--color-ink)]">
+          <p className="mt-2 text-2xl font-extrabold whitespace-pre-line text-[var(--color-ink)]">
             {currentQuestion.prompt}
           </p>
 
