@@ -16,9 +16,11 @@ import {
   getCompletedCategories,
   getLevel,
   getUnlockedCategories,
+  getXP,
   recordCategoryCompletion,
 } from "@/lib/storage";
 import type { CategoryCompletionResult } from "@/lib/storage";
+import { getEtappeDisplayName, getLevelProgress } from "@/lib/levelSystem";
 import type { CategoryId, QuestCategory, QuizQuestion } from "@/types/learning";
 
 const VALID_CATEGORY_IDS: CategoryId[] = ["cafe", "reise", "schule", "freunde", "review"];
@@ -171,6 +173,7 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
     null
   );
   const [previousLevel, setPreviousLevel] = useState(0);
+  const [previousXp, setPreviousXp] = useState(0);
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
 
   if (!shuffledQuestions) {
@@ -202,8 +205,10 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
       setCorrectAnswersCount(updatedCorrectAnswersCount);
       if (isCorrect) {
         const levelBefore = getLevel();
+        const xpBefore = getXP();
         const result = recordCategoryCompletion(category);
         setPreviousLevel(levelBefore);
+        setPreviousXp(xpBefore);
         setCompletionResult(result);
         setChallengeFailed(false);
       } else {
@@ -239,6 +244,7 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
         completionResult={completionResult}
         challengeFailed={challengeFailed}
         previousLevel={previousLevel}
+        previousXp={previousXp}
         correctCount={correctAnswersCount}
         total={questions.length}
         onHome={onHome}
@@ -261,7 +267,7 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
 
         <div>
           <p className="text-xs font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
-            {category.name}
+            {getEtappeDisplayName(category.id)}
           </p>
           <h1 className="text-2xl font-extrabold text-[var(--color-ink)]">
             {category.stageTitle}
@@ -353,6 +359,7 @@ interface ResultViewProps {
   completionResult: CategoryCompletionResult | null;
   challengeFailed: boolean;
   previousLevel: number;
+  previousXp: number;
   correctCount: number;
   total: number;
   onHome: () => void;
@@ -364,12 +371,25 @@ function ResultView({
   completionResult,
   challengeFailed,
   previousLevel,
+  previousXp,
   correctCount,
   total,
   onHome,
   onRetry,
 }: ResultViewProps) {
   const hasPlayedResultSoundRef = useRef(false);
+
+  const isFirstClear = Boolean(completionResult?.firstClear);
+  const totalXpAfter = completionResult?.totalXp ?? previousXp;
+  const progressBefore = getLevelProgress(previousXp);
+  const progressAfter = getLevelProgress(totalXpAfter);
+  const leveledUp = isFirstClear && (completionResult?.level ?? previousLevel) > previousLevel;
+
+  // The XP bar starts at the pre-quest position (0 when a level boundary was crossed) and
+  // grows to the new position right after mount — a pure CSS width transition.
+  const [xpBarPercent, setXpBarPercent] = useState(() =>
+    leveledUp ? 0 : progressBefore.progressPercent
+  );
 
   useEffect(() => {
     if (hasPlayedResultSoundRef.current) return;
@@ -384,10 +404,20 @@ function ResultView({
     }
   }, [correctCount, total]);
 
+  useEffect(() => {
+    if (!isFirstClear) return;
+    const timer = window.setTimeout(() => {
+      setXpBarPercent(progressAfter.progressPercent);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [isFirstClear, progressAfter.progressPercent]);
+
+  const displayName = getEtappeDisplayName(category.id);
+
   if (challengeFailed || !completionResult) {
     return (
       <main className="flex flex-1 items-center justify-center px-4 py-10">
-        <Card className="w-full max-w-md text-center">
+        <Card className="animate-pop-in w-full max-w-md text-center">
           <p className="text-2xl font-extrabold text-[var(--color-ink)]">Fast geschafft</p>
           <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
             Abschluss-Challenge noch einmal üben
@@ -414,15 +444,25 @@ function ResultView({
   if (!completionResult.firstClear) {
     return (
       <main className="flex flex-1 items-center justify-center px-4 py-10">
-        <Card className="w-full max-w-md text-center">
+        <Card className="animate-pop-in w-full max-w-md text-center">
           <p className="text-2xl font-extrabold text-[var(--color-ink)]">
             Wiederholung abgeschlossen
           </p>
+          <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{displayName}</p>
 
-          <div className="mt-5 flex justify-center gap-3">
-            <Badge variant="gray">XP +0</Badge>
-            <Badge variant="gray">Neue Karten 0</Badge>
+          <div className="mt-5 rounded-2xl border border-[var(--color-secondary-border)] bg-white/80 p-4 text-left">
+            <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
+              XP erhalten
+            </p>
+            <div className="mt-2 flex items-center justify-between text-sm font-bold text-[var(--color-ink)]">
+              <span>Wiederholung</span>
+              <span>+0 XP</span>
+            </div>
           </div>
+
+          <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
+            Wiederholungen stärken dein Wissen, geben aber aktuell keine zusätzlichen XP.
+          </p>
 
           <div className="mt-6 flex flex-col gap-3">
             <Button variant="secondary" onClick={onHome}>
@@ -437,21 +477,63 @@ function ResultView({
     );
   }
 
-  const leveledUp = completionResult.level > previousLevel;
-  const nextCategory = category.unlocksNext ? getQuestCategory(category.unlocksNext) : undefined;
+  const nextCategoryId = category.unlocksNext;
+  const nextCategory = nextCategoryId ? getQuestCategory(nextCategoryId) : undefined;
 
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-10">
-      <Card variant="highlight" className="w-full max-w-md text-center">
-        <p className="text-2xl font-extrabold text-[var(--color-ink)]">
-          {leveledUp ? `Level ${completionResult.level} erreicht!` : "Kategorie abgeschlossen!"}
+      <Card variant="highlight" className="animate-pop-in w-full max-w-md text-center">
+        <p
+          className={[
+            "text-2xl font-extrabold text-[var(--color-ink)]",
+            leveledUp ? "result-sparkle levelup-pop" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          {leveledUp ? `Level ${completionResult.level} erreicht!` : "Etappe abgeschlossen!"}
+        </p>
+        <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+          {displayName} · {category.stageTitle}
         </p>
 
+        <div className="mt-5 rounded-2xl border border-[var(--color-secondary-border)] bg-white/80 p-4 text-left">
+          <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
+            XP erhalten
+          </p>
+          <div className="mt-2 flex items-center justify-between text-sm text-[var(--color-ink)]">
+            <span>Etappenabschluss</span>
+            <span className="font-bold">+{completionResult.gainedXp} XP</span>
+          </div>
+          <div className="mt-2 flex items-center justify-between border-t border-[var(--color-secondary-border)] pt-2 text-sm font-bold text-[var(--color-ink)]">
+            <span>Gesamt</span>
+            <span>+{completionResult.gainedXp} XP</span>
+          </div>
+        </div>
+
+        <div className="mt-4 text-left">
+          <div className="flex items-center justify-between text-xs font-semibold text-[var(--color-ink-soft)]">
+            <span>Vorher: {previousXp} XP</span>
+            <span>Jetzt: {totalXpAfter} XP</span>
+          </div>
+          <div className="xp-bar-track mt-1.5" aria-hidden="true">
+            <div className="xp-bar-fill" style={{ width: `${xpBarPercent}%` }} />
+          </div>
+          <p className="mt-1.5 text-xs font-semibold text-[var(--color-ink-soft)]">
+            {leveledUp
+              ? `Level ${previousLevel} → Level ${completionResult.level}`
+              : `Level ${progressAfter.currentLevel}`}
+            {" · "}
+            Noch {progressAfter.xpRemaining} XP bis Level {progressAfter.nextLevel}
+          </p>
+        </div>
+
         <div className="mt-5 flex flex-wrap justify-center gap-3">
-          <Badge variant="green">+{completionResult.gainedXp} XP</Badge>
           <Badge variant="blue">{completionResult.newCards.length} Karten gesammelt</Badge>
-          {nextCategory ? (
-            <Badge variant="yellow">{nextCategory.name} freigeschaltet</Badge>
+          {nextCategory && nextCategoryId ? (
+            <Badge variant="yellow" className="unlock-shine">
+              {getEtappeDisplayName(nextCategoryId)} freigeschaltet
+            </Badge>
           ) : null}
         </div>
 
