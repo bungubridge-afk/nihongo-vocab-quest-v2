@@ -8,7 +8,8 @@ export type QuestionType =
   | "mistake-choice"
   | "kana-choice"
   | "typing"
-  | "reorder";
+  | "reorder"
+  | "speaking";
 
 export type CategoryId = "cafe" | "reise" | "schule" | "freunde" | "review";
 
@@ -64,6 +65,18 @@ export interface QuizQuestion {
   shortTip?: string;
   detailTip?: string;
   xpReward?: number;
+  /** Speaking questions only: the Japanese sentence the learner should say aloud. */
+  speechText?: string;
+  speechKana?: string;
+  speechRomaji?: string;
+  speechGerman?: string;
+  /**
+   * Speaking questions only: transcripts (kanji and kana variants) that count as a correct
+   * utterance after normalization — see `speechRecognition.ts`.
+   */
+  acceptedTranscripts?: string[];
+  /** Speaking questions only: always true — the learner may skip without penalty. */
+  canSkip?: boolean;
 }
 
 export interface QuestCategory {
