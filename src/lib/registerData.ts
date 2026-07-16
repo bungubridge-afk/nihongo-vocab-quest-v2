@@ -39,7 +39,7 @@ const SITUATION_LABELS: Record<ConversationSituation, string> = {
   general: "Allgemein",
   friend: "Freunde",
   family: "Familie",
-  classmate: "Mitschüler",
+  classmate: "Klassenkameraden",
   teacher: "Lehrkraft",
   stranger: "Fremde Person",
   staff: "Servicepersonal",

@@ -692,7 +692,7 @@ export const questCategories: QuestCategory[] = [
         type: "phrase-choice",
         categoryId: "freunde",
         prompt:
-          "Situation 1: Freund\nSituation 2: Lehrkraft\n\nSatz A: 明日、学校に行く。\nSatz B: 明日は学校に行きます。\n\nWelche Zuordnung passt am besten?",
+          "Situation 1: Freund\nSituation 2: Lehrkraft\n\nSatz A: 明日は学校に行く。\nSatz B: 明日は学校に行きます。\n\nWelche Zuordnung passt am besten?",
         instruction: "Wähle die passende Kombination aus Situation und Satz.",
         choices: [
           "Freund → Satz A, Lehrkraft → Satz B",
@@ -703,12 +703,13 @@ export const questCategories: QuestCategory[] = [
         answer: "Freund → Satz A, Lehrkraft → Satz B",
         vocabId: "friend",
         answerGerman: "Morgen gehe ich zur Schule.",
-        exampleJapanese: "明日、学校に行く。明日は学校に行きます。",
-        exampleKana: "あした、がっこうにいく。あしたはがっこうにいきます。",
+        exampleJapanese: "明日は学校に行く。明日は学校に行きます。",
+        exampleKana: "あしたはがっこうにいく。あしたはがっこうにいきます。",
         exampleGerman: "Morgen gehe ich zur Schule.",
-        shortTip: "Im lockeren Sprechen lässt man „は“ oft weg – das ist völlig normal.",
+        shortTip:
+          "Beide Sätze bedeuten dasselbe – nur die Satzendung zeigt den Unterschied zwischen Locker und Höflich.",
         detailTip:
-          "„明日、学校に行く“ und „明日は学校に行きます“ bedeuten beide „Morgen gehe ich zur Schule“. Unter Freunden wird „は“ oft weggelassen und die einfache Form benutzt; bei einer Lehrkraft bleibt „は“ meist stehen und das Verb wird zu „-masu“.",
+          "„明日は学校に行く“ und „明日は学校に行きます“ haben dieselbe Bedeutung: „Morgen gehe ich zur Schule“. Nur die Satzendung ändert sich: „行く“ ist die lockere Form für einen Freund, „行きます“ die höfliche Form für eine Lehrkraft. Der Rest des Satzes bleibt gleich.",
       },
       {
         id: "freunde-q9",

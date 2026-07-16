@@ -149,13 +149,65 @@ No card was added, removed, or replaced. `collectedCardIds` on the `freunde`
 - Prompt: two situations (Freund/Lehrkraft) and two labeled sentences (Satz A/B) using
   学校/行く (already taught in Schule, per the brief's explicit allowance to borrow
   earlier-learned words), asking which situation↔sentence pairing fits best.
-- Answer: `Freund → Satz A, Lehrkraft → Satz B` (A: 明日、学校に行く。 casual, は dropped
-  as is natural in casual speech; B: 明日は学校に行きます。 polite, は kept)
+- Answer: `Freund → Satz A, Lehrkraft → Satz B` (A: 明日は学校に行く。 casual; B: 明日は
+  学校に行きます。 polite — as of a later correction pass, see "Update — Q8 Comparison
+  Correction" below, the two sentences now differ only in the verb ending, 行く vs.
+  行きます; both keep 明日は)
 - Ambiguity check: the other 3 combination choices are the swapped pairing and the two
   "both same register" pairings — exactly one combination is the natural fit.
-- `detailTip` explains the は-dropping phenomenon in casual speech honestly (a genuine,
-  well-documented feature) rather than inventing a rule.
+- `detailTip` states both sentences mean the same thing and that only the sentence
+  ending marks the Locker/Höflich difference.
 - Result: pass.
+
+## Update — Q8 Comparison Correction
+
+A later QA pass (the Vocabulary Register UI work) re-examined every casual/polite
+comparison in the app for a specific defect: comparing two sentences that differ in
+*more than one place* teaches the wrong lesson about what makes a sentence casual or
+polite. `freunde-q8`'s original comparison had exactly this problem and has been
+corrected. This section documents the change; the Q8 review above already reflects the
+corrected sentences.
+
+**Previous comparison** (`freunde-q8`, before this correction):
+- Satz A (casual): `明日、学校に行く。` — あした、がっこうにいく。
+- Satz B (polite): `明日は学校に行きます。` — あしたはがっこうにいきます。
+
+Two things changed between A and B here, not one: `は` was present in B but absent
+in A (Satz A used a comma after 明日 instead), *and* the verb changed from 行く to
+行きます. A learner comparing these two sentences for the first time could easily walk
+away thinking that dropping `は` is *also* part of what makes a sentence casual — it
+isn't; is dropped or kept independently of register.
+
+**New comparison** (current `freunde-q8`):
+- Satz A (casual): `明日は学校に行く。` — あしたはがっこうにいく。 — `ashita wa gakkou ni iku`
+- Satz B (polite): `明日は学校に行きます。` — あしたはがっこうにいきます。 — `ashita wa gakkou ni ikimasu`
+- German (both): `Morgen gehe ich zur Schule.`
+
+Now exactly one thing differs between A and B: the verb ending (行く → 行きます). `明日は`
+is identical in both, so the comparison isolates the Locker/Höflich distinction the
+question is actually trying to teach.
+
+**Reason:** per the brief's own guidance, a *first* casual/polite comparison should vary
+only the sentence ending, not the sentence ending *and* an unrelated detail like a topic
+particle. The previous version's extraneous は-difference risked teaching an incorrect
+generalization ("casual drops は"); removing it isolates the one variable that actually
+matters here.
+
+**What was kept unchanged:** question id (`freunde-q8`), the 4 choices and their labels
+(`Freund → Satz A, Lehrkraft → Satz B`, etc. — these reference "Satz A"/"Satz B"
+abstractly and never embedded the literal Japanese text, so they needed no edits), the
+`answer` string, `vocabId` (`friend`), the learning goal (recognizing which situation a
+sentence fits), and the question's position in the array. `rewardXp` (110),
+`collectedCardIds` (unchanged 5 ids), and `unlocksNext` (`"review"`) on the `freunde`
+`QuestCategory` were not touched. No other Freunde question was modified.
+
+`shortTip`/`detailTip` were rewritten to match the new comparison, keeping the required
+message: "Die beiden Sätze haben dieselbe Bedeutung. Die Satzendung zeigt den Unterschied
+zwischen Locker und Höflich." (see the Q8 review above for the exact German text used).
+
+Verified via an automated script and in the browser: Q8's `answer` is still present in
+its `choices`, `choices` still has exactly 4 unique entries, only one entry is correct,
+and the Freunde Main Quest still has exactly 10 questions with `rewardXp: 110`.
 
 ### Q9 (`freunde-q9`) — Mini Challenge
 - Type: `phrase-choice`

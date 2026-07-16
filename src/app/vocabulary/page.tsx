@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Button, Card } from "@/components/ui";
+import { Badge, Button, Card, UsageExampleComparison } from "@/components/ui";
 import { vocabData } from "@/lib/vocabData";
 import { getQuestCategory } from "@/lib/questData";
 import { speakJapanese } from "@/lib/speech";
+import { getRegisterLabel } from "@/lib/registerData";
 import {
   getCollectedCards,
   getCompletedCategories,
@@ -15,7 +16,7 @@ import {
   getWeakWords,
   getXP,
 } from "@/lib/storage";
-import type { CardStatus, CategoryId, Rarity, VocabItem } from "@/types/learning";
+import type { CardStatus, CategoryId, Rarity, SpeechRegister, VocabItem } from "@/types/learning";
 
 const VOCAB_CATEGORY_ORDER: CategoryId[] = ["cafe", "reise", "schule", "freunde"];
 
@@ -26,6 +27,20 @@ const CATEGORY_FILTERS: { id: CategoryId | "all"; label: string }[] = [
   { id: "schule", label: "Schule" },
   { id: "freunde", label: "Freunde" },
 ];
+
+type RegisterFilter = "all" | "casual" | "polite";
+
+const REGISTER_FILTERS: { id: RegisterFilter; label: string }[] = [
+  { id: "all", label: "Alle" },
+  { id: "casual", label: getRegisterLabel("casual") },
+  { id: "polite", label: getRegisterLabel("polite") },
+];
+
+/** True if this word has at least one register-tagged usage example matching `register`
+ *  — words without `usageExamples` (Café/Reise, as of this pass) never match casual/polite. */
+function hasRegisterExample(vocab: VocabItem, register: SpeechRegister): boolean {
+  return (vocab.usageExamples ?? []).some((example) => example.register === register);
+}
 
 const STATUS_LABEL: Record<CardStatus, string> = {
   locked: "Locked",
@@ -112,6 +127,7 @@ export default function VocabularyPage() {
   const router = useRouter();
   const [state, setState] = useState<PageState>(INITIAL_STATE);
   const [categoryFilter, setCategoryFilter] = useState<CategoryId | "all">("all");
+  const [registerFilter, setRegisterFilter] = useState<RegisterFilter>("all");
 
   useEffect(() => {
     // One-time client-only read of localStorage after hydration.
@@ -128,10 +144,12 @@ export default function VocabularyPage() {
   }
 
   const progress = state.progress;
-  const visibleCards =
-    categoryFilter === "all"
-      ? vocabData
-      : vocabData.filter((vocab) => vocab.categoryId === categoryFilter);
+  const visibleCards = vocabData.filter((vocab) => {
+    const matchesCategory = categoryFilter === "all" || vocab.categoryId === categoryFilter;
+    const matchesRegister =
+      registerFilter === "all" || hasRegisterExample(vocab, registerFilter);
+    return matchesCategory && matchesRegister;
+  });
 
   return (
     <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
@@ -188,6 +206,7 @@ export default function VocabularyPage() {
               key={filter.id}
               variant={categoryFilter === filter.id ? "primary" : "secondary"}
               size="sm"
+              className="min-h-11"
               onClick={() => setCategoryFilter(filter.id)}
             >
               {filter.label}
@@ -195,16 +214,39 @@ export default function VocabularyPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleCards.map((vocab) => (
-            <VocabCard
-              key={vocab.id}
-              vocab={vocab}
-              status={getCardStatus(vocab, progress)}
-              onPractice={() => router.push(`/practice?word=${vocab.id}`)}
-            />
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
+            Register
+          </span>
+          {REGISTER_FILTERS.map((filter) => (
+            <Button
+              key={filter.id}
+              variant={registerFilter === filter.id ? "primary" : "secondary"}
+              size="sm"
+              className="min-h-11"
+              onClick={() => setRegisterFilter(filter.id)}
+            >
+              {filter.label}
+            </Button>
           ))}
         </div>
+
+        {visibleCards.length === 0 ? (
+          <Card variant="default" className="text-center">
+            <p className="text-[var(--color-ink-soft)]">Keine passenden Wortkarten gefunden.</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleCards.map((vocab) => (
+              <VocabCard
+                key={vocab.id}
+                vocab={vocab}
+                status={getCardStatus(vocab, progress)}
+                onPractice={() => router.push(`/practice?word=${vocab.id}`)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
@@ -241,6 +283,11 @@ function VocabCard({ vocab, status, onPractice }: VocabCardProps) {
   const isSammelbar = status === "sammelbar";
   const isHidden = isLocked || isSammelbar;
   const category = getQuestCategory(vocab.categoryId);
+  const [showComparison, setShowComparison] = useState(false);
+  // Only ever read on a visible card — an uncollected/locked card's usageExamples are
+  // never passed to UsageExampleComparison, so no register content can leak early.
+  const hasUsageExamples = !isHidden && (vocab.usageExamples?.length ?? 0) > 0;
+  const comparisonId = `usage-compare-${vocab.id}`;
 
   return (
     <Card variant={isHidden ? "locked" : "default"} className="flex flex-col gap-3">
@@ -319,6 +366,25 @@ function VocabCard({ vocab, status, onPractice }: VocabCardProps) {
           </div>
 
           <p className="text-sm text-[var(--color-ink)]">{truncate(vocab.shortTip, 60)}</p>
+
+          {hasUsageExamples ? (
+            <div className="border-t border-[var(--color-secondary-border)] pt-3">
+              <button
+                type="button"
+                onClick={() => setShowComparison((prev) => !prev)}
+                aria-expanded={showComparison}
+                aria-controls={comparisonId}
+                className="tap-scale inline-flex min-h-11 items-center text-sm font-semibold text-[var(--color-primary-dark)] underline underline-offset-2"
+              >
+                {showComparison ? "Weniger anzeigen" : "Locker & Höflich vergleichen"}
+              </button>
+              {showComparison ? (
+                <div id={comparisonId} className="mt-2">
+                  <UsageExampleComparison usageExamples={vocab.usageExamples} />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </>
       )}
 

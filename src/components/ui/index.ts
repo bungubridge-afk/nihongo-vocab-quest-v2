@@ -21,3 +21,9 @@ export type { QuestStageDetailsProps } from "@/components/ui/QuestStageDetails";
 
 export { FeedbackPanel } from "@/components/ui/FeedbackPanel";
 export type { FeedbackPanelProps } from "@/components/ui/FeedbackPanel";
+
+export { RegisterBadge } from "@/components/ui/RegisterBadge";
+export type { RegisterBadgeProps } from "@/components/ui/RegisterBadge";
+
+export { UsageExampleComparison } from "@/components/ui/UsageExampleComparison";
+export type { UsageExampleComparisonProps } from "@/components/ui/UsageExampleComparison";

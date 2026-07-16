@@ -15,6 +15,9 @@
 - Automated audit (10 questions + full-app regression, via a temporary script deleted
   after use — `_finale_validate.ts` + `_tsconfig.validate.json`, compiled with a
   throwaway CommonJS `tsc` pass and run with `node`): `OK: no failures found.`
+- Coverage: all 26 words are reintroduced across questions, correct answers, and
+  feedback — 5 Tested, 11 Used in correct answer, 10 Reviewed in feedback only (see
+  "26-Word Coverage Matrix" below for the per-word breakdown and exact definitions).
 
 ## Existing Finale Configuration
 
@@ -63,44 +66,75 @@ exactly — no discrepancy to report.
 
 ## 26-Word Coverage Matrix
 
-"Reviewed in question" lists every question that meaningfully touches the word (as the
-central answer, in the correct sentence's context, or in a `shortTip`/`detailTip`
-explanation) — appearing only inside a wrong choice does not count, per the brief.
+**Coverage classification, not a claim that all 26 words were tested.** Every word below
+is *reintroduced* somewhere in the Finale, but reintroduction happens in three
+meaningfully different ways, and conflating them would overstate what the Finale
+actually checks. Each word is classified into exactly one of:
 
-| ID | Japanese | Category | Reviewed in question | Review location | Result |
-|---|---|---|---|---|---|
-| `coffee` | コーヒー | Café | Q1, Q3, Q10 | Q1 `detailTip` ("コーヒーを飲みます"); Q3 central answer + context; Q10 scene A context | Covered |
-| `water` | 水 | Café | Q1 | Q1 `detailTip` ("水を飲みます") | Covered |
-| `bread` | パン | Café | Q1, Q3, Q10 | Q1 `exampleJapanese`/context ("パンを食べます"); Q3 central answer; Q10 scene A context | Covered |
-| `drink` | 飲む | Café | Q1 | Q1 `detailTip` (verb-pair explanation with 2 example sentences) | Covered |
-| `eat` | 食べる | Café | Q1 | Q1 central answer | Covered |
-| `station` | 駅 | Reise | Q2 | Q2 central answer | Covered |
-| `hotel` | ホテル | Reise | Q2, Q4 | Q2 `detailTip` context; Q4 central sentence ("ホテルに行きます") | Covered |
-| `train` | 電車 | Reise | Q4 | Q4 sentence context + `detailTip` ("電車で" contrasted with に) | Covered |
-| `toilet` | トイレ | Reise | Q2 | Q2 `detailTip` context ("トイレはどこですか") | Covered |
-| `go` | 行く | Reise | Q4 | Q4 central particle question (行きます) | Covered |
-| `where` | どこ | Reise | Q2 | Q2 central pattern explanation ("〜はどこですか") | Covered |
-| `excuseMe` | すみません | Reise | Q2 | Q2 `detailTip` context ("すみません、駅はどこですか") | Covered |
-| `right` | 右 | Reise | Q4 | Q4 `detailTip` context ("右です") | Covered |
-| `left` | 左 | Reise | Q4 | Q4 `detailTip` context ("左です") | Covered |
-| `near` | 近い | Reise | Q4 | Q4 `detailTip` context ("近いです") | Covered |
-| `far` | 遠い | Reise | Q4 | Q4 `detailTip` context ("遠いです") | Covered |
-| `school` | 学校 | Schule | Q5, Q6 | Q5 central (both sentences); Q6 context | Covered |
-| `teacher` | 先生 | Schule | Q8, Q9 | Q8 `detailTip` ("先生と日本語を勉強します"); Q9 central noun ("先生と話します") | Covered |
-| `japaneseLanguage` | 日本語 | Schule | Q6 | Q6 central answer / `vocabId` | Covered |
-| `study` | 勉強する | Schule | Q5, Q6 | Q5 context ("学校で勉強します"); Q6 context ("日本語を勉強します") | Covered |
-| `today` | 今日 | Schule | Q6 | Q6 central topic ("今日は") | Covered |
-| `friend` | 友だち | Freunde | Q7, Q8, Q9, Q10 | Q7/Q8 central noun; Q9 context ("友だちと話す"); Q10 scene C context | Covered |
-| `meet` | 会う | Freunde | Q7, Q8 | Q7 central (casual 会う); Q8 central (polite 会います) | Covered |
-| `talk` | 話す | Freunde | Q9 | Q9 central (casual 話す / polite 話します) | Covered |
-| `tomorrow` | 明日 | Freunde | Q7, Q8 | Q7/Q8 central topic word / `vocabId` | Covered |
-| `like` | 好き | Freunde | Q7 | Q7 `detailTip` ("友だちが好き" aside) | Covered |
+- **Tested** — the word's own meaning or usage is the central judgment a learner must
+  make to pick the correct answer (e.g. Q1 genuinely tests whether the learner knows
+  食べる means "essen"; getting Q1 right requires knowing that word specifically).
+- **Used in correct answer** — the word appears, with its ordinary meaning, inside the
+  correct sentence/answer, but the question's central judgment is something else (a
+  particle, a register choice, a different word) — the learner doesn't have to actively
+  recall *this* word's meaning to answer correctly, since it's supplied as given context.
+- **Reviewed in feedback** — the word only reappears in a `shortTip`/`detailTip`
+  explanation or a feedback example sentence; it plays no role in selecting the correct
+  answer at all.
 
-**Result: 26 / 26 words covered.** Verified both manually and by an automated script
-that scans every `prompt`/`instruction`/`answer`/`shortTip`/`detailTip`/`choices`/
-`exampleJapanese`/`exampleGerman`/`answerGerman` field of the 10 Finale questions for
-each word's kanji stem (okurigana-stripped, so 行く/行きます and 勉強する/勉強します
-both match) or its German headword.
+Where a word qualifies for more than one category across different questions, the
+**strongest** classification wins, in this order: Tested > Used in correct answer >
+Reviewed in feedback. A word appearing only inside a *wrong* choice does not count as
+coverage in any category, per the brief.
+
+| ID | Japanese | Category | Coverage type | Question | Review location | Result |
+|---|---|---|---|---|---|---|
+| `eat` | 食べる | Café | Tested | Q1 | Central answer (食べる → essen) | Reintroduced |
+| `coffee` | コーヒー | Café | Used in correct answer | Q1, Q3, Q10 | Q3's correct sentence (コーヒーとパンをください) and Q10 scene A; also named in Q1's `detailTip` | Reintroduced |
+| `bread` | パン | Café | Used in correct answer | Q1, Q3, Q10 | Q3's correct sentence and Q10 scene A; also in Q1's `exampleJapanese` | Reintroduced |
+| `water` | 水 | Café | Reviewed in feedback | Q1 | Q1 `detailTip` only ("水を飲みます") — never in a correct answer | Reintroduced |
+| `drink` | 飲む | Café | Reviewed in feedback | Q1 | Q1 `detailTip` only (verb-pair explanation) — never in a correct answer | Reintroduced |
+| `station` | 駅 | Reise | Tested | Q2 | Central answer (Bahnhof → 駅) | Reintroduced |
+| `go` | 行く | Reise | Tested | Q4 | Central judgment (choosing に for 行きます) | Reintroduced |
+| `hotel` | ホテル | Reise | Used in correct answer | Q4 | Part of Q4's correct sentence (ホテルに行きます); also named in Q2's `detailTip` | Reintroduced |
+| `train` | 電車 | Reise | Used in correct answer | Q4 | Part of Q4's given/correct sentence (電車で…); also explained in `detailTip` | Reintroduced |
+| `toilet` | トイレ | Reise | Reviewed in feedback | Q2 | Q2 `detailTip` only — never in a correct answer | Reintroduced |
+| `where` | どこ | Reise | Reviewed in feedback | Q2 | Q2 `detailTip` pattern explanation only — Q2's own correct answer is 駅, not どこ | Reintroduced |
+| `excuseMe` | すみません | Reise | Reviewed in feedback | Q2 | Q2 `detailTip` only — never in a correct answer | Reintroduced |
+| `right` | 右 | Reise | Reviewed in feedback | Q4 | Q4 `detailTip` only — never in a correct answer | Reintroduced |
+| `left` | 左 | Reise | Reviewed in feedback | Q4 | Q4 `detailTip` only — never in a correct answer | Reintroduced |
+| `near` | 近い | Reise | Reviewed in feedback | Q4 | Q4 `detailTip` only — never in a correct answer | Reintroduced |
+| `far` | 遠い | Reise | Reviewed in feedback | Q4 | Q4 `detailTip` only — never in a correct answer | Reintroduced |
+| `school` | 学校 | Schule | Used in correct answer | Q5, Q6 | Q5's central judgment is に vs で, not 学校's meaning; also in Q6, Q10 | Reintroduced |
+| `teacher` | 先生 | Schule | Used in correct answer | Q9 | Part of Q9's correct sentence B (先生と話します); Q8 `detailTip` only mentions it | Reintroduced |
+| `japaneseLanguage` | 日本語 | Schule | Used in correct answer | Q6 | Part of Q6's correct sentence; Q6's central judgment is the 4-block sentence assembly, not this word alone | Reintroduced |
+| `study` | 勉強する | Schule | Used in correct answer | Q5, Q6 | Part of both Q5 sentences and Q6's correct sentence | Reintroduced |
+| `today` | 今日 | Schule | Used in correct answer | Q6, Q10 | Part of Q6's correct sentence and Q10 scene B; central judgment is sentence assembly, not this word alone | Reintroduced |
+| `meet` | 会う | Freunde | Tested | Q7, Q8 | Central judgment (会う vs. 会います vs. wrong particle/person, for the stated situation) | Reintroduced |
+| `talk` | 話す | Freunde | Tested | Q9 | Central judgment (話す vs. 話します vs. wrong particle, for the stated situation) | Reintroduced |
+| `friend` | 友だち | Freunde | Used in correct answer | Q7, Q8, Q9, Q10 | Part of every correct sentence in Q7/Q8/Q9/Q10; central judgment there is the register, not 友だち's meaning | Reintroduced |
+| `tomorrow` | 明日 | Freunde | Used in correct answer | Q7, Q8 | Part of Q7/Q8's correct sentence; central judgment is 会う vs. 会います, not this word | Reintroduced |
+| `like` | 好き | Freunde | Reviewed in feedback | Q7 | Q7 `detailTip` aside ("友だちが好き") only — never in a correct answer | Reintroduced |
+
+### Counts
+
+- **Tested: 5** — eat, station, go, meet, talk
+- **Used in correct answer: 11** — coffee, bread, hotel, train, school, teacher,
+  japaneseLanguage, study, today, friend, tomorrow
+- **Reviewed in feedback only: 10** — water, drink, toilet, where, excuseMe, right, left,
+  near, far, like
+- **Total reintroduced: 26** (5 + 11 + 10 = 26, matching the full Area 1 vocabulary)
+
+All 26 words are reintroduced across questions, correct answers, and feedback — **not**
+a claim that all 26 were tested. Only 5 words are actually the central judgment point of
+a question; the Finale's design deliberately reuses the other 21 as supporting context
+(per the brief's own instruction that "26語すべてを無理に単独問題へしない" — not every word
+needs its own dedicated question). Verified both manually (see table above) and by an
+automated script that scans every `prompt`/`instruction`/`answer`/`shortTip`/`detailTip`/
+`choices`/`exampleJapanese`/`exampleGerman`/`answerGerman` field of the 10 Finale
+questions for each word's kanji stem (okurigana-stripped, so 行く/行きます and
+勉強する/勉強します both match) or its German headword, confirming all 26 appear at least
+once.
 
 ## Learning Goals
 
@@ -475,20 +509,18 @@ script's English-leakage and coverage checks.
 
 ## Remaining Issues
 
-- **Freunde Main Quest's `freunde-q8` mixes two differences in its casual/polite
-  comparison, not just the sentence ending.** Per this brief's section 6 audit request:
-  `freunde-q8`'s two sentences are `明日、学校に行く。` (casual) and `明日は学校に行きます。`
-  (polite) — besides the expected 行く→行きます register change, the casual side also
-  drops `は` (明日, no は) while the polite side keeps it (明日**は**). This matches the
-  brief's own "推奨しない初回比較" example almost exactly (`今日、学校に行く。今日は学校に
-  行きます。`). `freunde-q9` and `freunde-challenge` were also checked: `freunde-q9`
-  compares two *different* topics (友だち vs. 日本語) with their own independently correct
-  registers rather than a same-content minimal pair, so the "vary only the ending" rule
-  doesn't directly apply there; `freunde-challenge` keeps `今日は` identical on both sides
-  and only changes the addressee (友だち→先生, expected for a situation-match) plus the
-  register ending, so it doesn't exhibit the same issue. As instructed, `freunde-q8` was
-  **not** modified this pass (Freunde Main Quest content is out of scope) — flagging it
-  here for a future pass to consider.
+- ~~**Freunde Main Quest's `freunde-q8` mixes two differences in its casual/polite
+  comparison, not just the sentence ending.**~~ **Resolved** in the Vocabulary Register UI
+  pass. `freunde-q8`'s two sentences were `明日、学校に行く。` (casual) and `明日は学校に
+  行きます。` (polite) — besides the expected 行く→行きます register change, the casual side
+  also dropped `は` while the polite side kept it, matching this brief's own "推奨しない
+  初回比較" example almost exactly. They are now `明日は学校に行く。` / `明日は学校に行きます。`
+  — identical except for the verb ending. Question id, choices, answer, `vocabId`,
+  `rewardXp` (110), `collectedCardIds`, and `unlocksNext` on the `freunde` category were
+  all left unchanged; only the two sentences and their `shortTip`/`detailTip` were
+  corrected. Full before/after detail: see `docs/FREUNDE_MAIN_QUEST_QA.md`'s
+  "Update — Q8 Comparison Correction" section. (`freunde-q9`/`freunde-challenge` were
+  re-checked at the same time and don't exhibit this issue — see that section for why.)
 - **Two/three-sentence Finale answers (Q5, Q9, Q10) rely on `/`-separated single-line text,
   not real line breaks.** `FeedbackPanel`'s answer/reading/example fields render as plain
   `<p>` text (no `white-space: pre-line`), so a literal `\n` would collapse to a single

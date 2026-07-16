@@ -27,6 +27,12 @@
   --color-blue-soft: #e5edfc;
   --color-blue-border: #c7d9f5;
 
+  /* Höflich (polite) register badge — kept distinct from --color-primary, which already
+     carries a "correct/success" meaning elsewhere (FeedbackPanel, collected-card status). */
+  --color-teal: #1a8f7b;
+  --color-teal-soft: #e1f5f0;
+  --color-teal-border: #bfe6da;
+
   --color-locked: #8890a6;
   --color-locked-bg: #eceff5;
 
