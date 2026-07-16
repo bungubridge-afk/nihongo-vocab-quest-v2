@@ -9,10 +9,25 @@ import type { QuestStageIcon } from "@/components/ui/QuestNode";
  * progress data.
  */
 
+/**
+ * Which decorative background theme a world/area uses. Only "kyoto" has an actual
+ * scenery implementation today (`MapScenery` in `QuestMap.tsx`); the other ids exist so a
+ * future Area 2/3 can declare its theme here first and get a real background later without
+ * touching this file's shape or any component's props again.
+ */
+export type AreaThemeId = "kyoto" | "tokyo" | "city" | "nature";
+
+export interface AreaTheme {
+  id: AreaThemeId;
+  /** Motif names used purely for documentation/future scenery work — not rendered directly. */
+  motifs: string[];
+}
+
 export interface WorldMeta {
   id: string;
   name: string;
   subtitle: string;
+  theme: AreaTheme;
 }
 
 /** The one playable world today. Adding a second world later means adding an entry here
@@ -21,6 +36,10 @@ export const currentWorld: WorldMeta = {
   id: "erste-schritte-in-japan",
   name: "Erste Schritte in Japan",
   subtitle: "Deine Reise beginnt hier.",
+  theme: {
+    id: "kyoto",
+    motifs: ["torii", "fuji", "lantern", "machiya", "sakura"],
+  },
 };
 
 export interface StageMapMeta {

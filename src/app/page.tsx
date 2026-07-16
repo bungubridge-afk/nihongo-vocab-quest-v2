@@ -261,11 +261,15 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
   const nextCategory = getNextCategory(completedCategories);
   const levelProgress = getLevelProgress(xp);
 
-  // The stage list, computed once per render from the real unlock/completion truth.
+  // The stage list, computed once per render from the real unlock/completion truth. XP,
+  // card count, and description all come straight from questData — worldMapData only
+  // supplies the icon and (for the finale) the narrative blurb.
   const stages: QuestMapStage[] = CATEGORY_ORDER.map((categoryId) => {
     const isCompleted = completedCategories.includes(categoryId);
     const isUnlocked = unlockedCategories.includes(categoryId);
     const isReviewCategory = categoryId === "review";
+    const category = getQuestCategory(categoryId);
+    const meta = stageMapMeta[categoryId];
 
     let status: QuestNodeStatus;
     if (isCompleted) {
@@ -284,8 +288,11 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
       id: categoryId,
       title: getEtappeDisplayName(categoryId),
       status,
-      icon: stageMapMeta[categoryId].icon,
+      icon: meta.icon,
       isFinale: isReviewCategory,
+      rewardXp: category?.rewardXp ?? 0,
+      cardCount: category?.collectedCardIds.length ?? 0,
+      description: meta.flavorText ?? category?.description ?? "",
     };
   });
 
@@ -361,95 +368,103 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
 
         <div className="home-grid">
           <div className="home-area-map">
-            <QuestMap stages={stages} selectedId={selectedId} onSelect={setSelectedId} />
+            <QuestMap
+              stages={stages}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onStart={(id) => router.push(`/lesson?category=${id}`)}
+              theme={currentWorld.theme.id}
+            />
             <NextAreaPreview />
           </div>
 
-          <div className="home-area-levelcard">
-            <Card variant="default">
-              <p className="font-bold text-[var(--color-ink)]">Dein Level</p>
-              <p className="mt-1 text-2xl font-extrabold text-[var(--color-ink)]">
-                Level {levelProgress.currentLevel}
-              </p>
-              <div className="xp-bar-track mt-2" aria-hidden="true">
-                <div
-                  className="xp-bar-fill"
-                  style={{ width: `${levelProgress.progressPercent}%` }}
-                />
-              </div>
-              <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">
-                {levelProgress.xpIntoLevel} / {levelProgress.xpRequiredForLevel} XP
-              </p>
-              <p className="text-sm text-[var(--color-ink-soft)]">
-                Noch {levelProgress.xpRemaining} XP bis Level {levelProgress.nextLevel}
-              </p>
-              <p className="mt-2 text-xs text-[var(--color-ink-soft)]">Gesamt: {xp} XP</p>
-            </Card>
-          </div>
-
-          <div className="home-area-details">
-            {selectedCategory ? (
-              <QuestStageDetails
-                category={selectedCategory}
-                displayName={selectedStage.title}
-                status={selectedStage.status}
-                icon={selectedMeta.icon}
-                flavorText={selectedMeta.flavorText}
-                isFinale={selectedStage.isFinale}
-                onStart={
-                  selectedStage.status !== "locked"
-                    ? () => router.push(`/lesson?category=${selectedStage.id}`)
-                    : undefined
-                }
-              />
-            ) : null}
-          </div>
-
-          <div className="home-area-progress">
-            <Card variant="default">
-              <p className="font-bold text-[var(--color-ink)]">Reisefortschritt</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">
-                {completedCategories.length} / 5 Etappen geschafft
-              </p>
-              <div className="mt-2 flex gap-1.5" aria-hidden="true">
-                {CATEGORY_ORDER.map((id) => (
-                  <span
-                    key={id}
-                    className={`h-2 flex-1 rounded-full ${
-                      completedCategories.includes(id)
-                        ? "bg-[var(--color-primary)]"
-                        : "bg-[var(--color-secondary-border)]"
-                    }`}
-                  />
-                ))}
-              </div>
-              <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-                Kleine Schritte, echte Sätze.
-              </p>
-            </Card>
-          </div>
-
-          <div className="home-area-training">
-            <Card variant="default" onClick={() => router.push("/review")}>
-              <p className="font-bold text-[var(--color-ink)]">Trainingslager</p>
-              <Badge variant={weakWords.length > 0 ? "yellow" : "gray"} className="mt-2">
-                {weakWords.length > 0 ? `${weakWords.length} Wörter` : "Bereit"}
-              </Badge>
-              {weakWords.length === 0 ? (
-                <>
-                  <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-                    Noch keine schwachen Wörter.
-                  </p>
-                  <p className="text-sm text-[var(--color-ink-soft)]">
-                    Starte ein Quiz, um deine Wiederholungsliste zu bauen.
-                  </p>
-                </>
-              ) : (
-                <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-                  {weakWords.length} Wörter zum Üben
+          <div className="home-sidebar">
+            <div className="home-area-levelcard">
+              <Card variant="default">
+                <p className="font-bold text-[var(--color-ink)]">Dein Level</p>
+                <p className="mt-1 text-2xl font-extrabold text-[var(--color-ink)]">
+                  Level {levelProgress.currentLevel}
                 </p>
-              )}
-            </Card>
+                <div className="xp-bar-track mt-2" aria-hidden="true">
+                  <div
+                    className="xp-bar-fill"
+                    style={{ width: `${levelProgress.progressPercent}%` }}
+                  />
+                </div>
+                <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">
+                  {levelProgress.xpIntoLevel} / {levelProgress.xpRequiredForLevel} XP
+                </p>
+                <p className="text-sm text-[var(--color-ink-soft)]">
+                  Noch {levelProgress.xpRemaining} XP bis Level {levelProgress.nextLevel}
+                </p>
+                <p className="mt-2 text-xs text-[var(--color-ink-soft)]">Gesamt: {xp} XP</p>
+              </Card>
+            </div>
+
+            <div className="home-area-details">
+              {selectedCategory ? (
+                <QuestStageDetails
+                  category={selectedCategory}
+                  displayName={selectedStage.title}
+                  status={selectedStage.status}
+                  icon={selectedMeta.icon}
+                  flavorText={selectedMeta.flavorText}
+                  isFinale={selectedStage.isFinale}
+                  onStart={
+                    selectedStage.status !== "locked"
+                      ? () => router.push(`/lesson?category=${selectedStage.id}`)
+                      : undefined
+                  }
+                />
+              ) : null}
+            </div>
+
+            <div className="home-area-progress">
+              <Card variant="default">
+                <p className="font-bold text-[var(--color-ink)]">Reisefortschritt</p>
+                <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">
+                  {completedCategories.length} / 5 Etappen geschafft
+                </p>
+                <div className="mt-2 flex gap-1.5" aria-hidden="true">
+                  {CATEGORY_ORDER.map((id) => (
+                    <span
+                      key={id}
+                      className={`h-2 flex-1 rounded-full ${
+                        completedCategories.includes(id)
+                          ? "bg-[var(--color-primary)]"
+                          : "bg-[var(--color-secondary-border)]"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
+                  Kleine Schritte, echte Sätze.
+                </p>
+              </Card>
+            </div>
+
+            <div className="home-area-training">
+              <Card variant="default" onClick={() => router.push("/review")}>
+                <p className="font-bold text-[var(--color-ink)]">Trainingslager</p>
+                <Badge variant={weakWords.length > 0 ? "yellow" : "gray"} className="mt-2">
+                  {weakWords.length > 0 ? `${weakWords.length} Wörter` : "Bereit"}
+                </Badge>
+                {weakWords.length === 0 ? (
+                  <>
+                    <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
+                      Noch keine schwachen Wörter.
+                    </p>
+                    <p className="text-sm text-[var(--color-ink-soft)]">
+                      Starte ein Quiz, um deine Wiederholungsliste zu bauen.
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
+                    {weakWords.length} Wörter zum Üben
+                  </p>
+                )}
+              </Card>
+            </div>
           </div>
         </div>
       </div>

@@ -63,11 +63,24 @@ body {
 
 .quest-map-scroll {
   position: relative;
+  overflow: hidden;
   border: 1px solid var(--color-secondary-border);
   border-radius: 28px;
-  background: linear-gradient(180deg, #eaf3ff 0%, #f0f6ec 55%, #f6f2e6 100%);
+  background:
+    radial-gradient(circle at 82% 2%, rgba(251, 240, 217, 0.9), transparent 30%),
+    linear-gradient(180deg, #eaf3ff 0%, #f0f6ec 45%, #fbf2ec 78%, #f6efe6 100%);
   padding: 0.5rem 0 1.25rem;
   box-shadow: 0 10px 26px -18px var(--color-card-shadow);
+}
+
+/* Themed background layer — low-contrast, decorative only, always painted before the
+   rows (which follow it in the DOM), so nodes/cards/road always render on top. */
+.quest-map-deco {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .quest-start-row {
@@ -117,22 +130,42 @@ body {
   color: var(--color-ink-soft);
 }
 
-/* Each stage's own row. Heights below match the brief's target center-to-center spacing
-   at each breakpoint; they only ever grow the map's total height, never shrink a
-   neighboring row. */
+/* Each stage's own row. On mobile the compact card stacks below its node in normal flow
+   (so the row's height grows with real card content — see the padding-top note below);
+   from sm up, the node is vertically centered and the card sits beside it, so the row
+   only needs a fixed minimum height instead of flow-driven growth. Either way, every row
+   is still fully self-contained: nothing here can bleed into a neighboring row. */
 .quest-row {
   position: relative;
-  min-height: 210px;
+  padding-top: 150px;
+  padding-bottom: 12px;
+  min-height: 170px;
+}
+
+.quest-row-finale {
+  padding-top: 210px;
 }
 
 @media (min-width: 640px) {
-  .quest-row {
-    min-height: 250px;
+  .quest-row:not(.quest-row-finale) {
+    padding-top: 0;
+    padding-bottom: 0;
+    min-height: 225px;
+  }
+
+  .quest-row-finale {
+    padding-top: 210px;
+    padding-bottom: 18px;
+    min-height: 260px;
   }
 }
 
 @media (min-width: 1024px) {
-  .quest-row {
+  .quest-row:not(.quest-row-finale) {
+    min-height: 250px;
+  }
+
+  .quest-row-finale {
     min-height: 300px;
   }
 }
@@ -149,19 +182,39 @@ body {
   stroke: var(--color-primary);
 }
 
+/* The one segment leading from "current" into the next (locked) stage: a lighter,
+   direction-hinting green-teal instead of the flat locked gray, so the map reads as
+   "you're headed this way next" rather than "everything past here looks the same". */
+.quest-path-upcoming {
+  stroke: #7fc9b8;
+  stroke-dasharray: 1 7;
+}
+
 .quest-path-todo {
   stroke: #c3cbdd;
   stroke-dasharray: 0.5 11;
 }
 
-/* The node sits at the row's exact vertical center — the same point the road's curve
-   targets (see `rowRoadPath` in QuestMap.tsx) — leaving equal clearance above and below
-   before the row's own edge, so its label can never reach into the next stage's row. */
+/* The node sits at a fixed offset from the row's top on mobile (so the in-flow card below
+   it starts after `padding-top` clears it) and at the row's vertical center from sm up
+   (where the card moves beside it instead). Finale keeps the "fixed offset, card below"
+   arrangement at every breakpoint — see the sm+ rule's `:not(.quest-row-node-finale)`. */
 .quest-row-node {
   position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  top: 44px;
+  transform: translate(-50%, 0);
   z-index: 2;
+}
+
+.quest-row-node-finale {
+  top: 54px;
+}
+
+@media (min-width: 640px) {
+  .quest-row-node:not(.quest-row-node-finale) {
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .quest-node-circle {
@@ -180,6 +233,80 @@ body {
     0 0 0 3px #fff,
     0 0 0 6px var(--color-ink),
     0 8px 18px -10px var(--color-card-shadow);
+}
+
+/* The compact info card beside/below each node. Base rule = mobile: normal document flow,
+   centered, stacked below the node. From sm up, `[data-side="left"|"right"]` switches it to
+   absolute positioning beside the node (`--card-x`, set inline per stage in QuestMap.tsx);
+   `[data-side="center"]` (the finale) simply never matches those selectors, so it keeps
+   the "below, in flow" arrangement at every breakpoint — no special-casing needed. */
+.quest-row-card {
+  position: static;
+  z-index: 2;
+  margin: 10px auto 0;
+  width: min(100%, 17.5rem);
+  border-color: var(--color-secondary-border);
+}
+
+@media (min-width: 640px) {
+  .quest-row-card[data-side="left"],
+  .quest-row-card[data-side="right"] {
+    position: absolute;
+    top: 50%;
+    margin: 0;
+    width: 15rem;
+    left: var(--card-x);
+  }
+
+  .quest-row-card[data-side="right"] {
+    transform: translateY(-50%);
+  }
+
+  .quest-row-card[data-side="left"] {
+    transform: translate(-100%, -50%);
+  }
+}
+
+@media (min-width: 1024px) {
+  .quest-row-card[data-side="left"],
+  .quest-row-card[data-side="right"] {
+    width: 16.25rem;
+  }
+}
+
+.quest-row-card-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* completed/locked are deliberately quieter than current — current is the one card that
+   should pull the eye. */
+.quest-row-card-current {
+  border-color: var(--color-primary);
+  box-shadow: 0 10px 22px -14px var(--color-primary);
+}
+
+.quest-row-card-completed {
+  border-color: var(--color-primary-border);
+  box-shadow: none;
+}
+
+.quest-row-card-locked {
+  border-color: var(--color-secondary-border);
+  background: var(--color-locked-bg);
+  box-shadow: none;
+}
+
+.quest-row-card-finale {
+  border-color: var(--color-gold-border);
+  box-shadow: 0 10px 22px -14px rgba(201, 138, 31, 0.5);
+}
+
+.quest-row-card-selected {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
 }
 
 .quest-node-glow {
@@ -298,10 +425,18 @@ body {
 }
 
 /* ===== Home layout grid =====
- * One grid, two shapes: on mobile everything stacks in a single column in the order the
- * brief asks for (status card → selected stage → map → progress → training); from lg up,
- * the same five areas re-flow into a wide map column plus a narrower stacked sidebar,
- * without moving anything in the markup itself. */
+ * On mobile, `.home-sidebar` is `display: contents` — it disappears from the box model, so
+ * its four children become direct grid items and place into the brief's interleaved order
+ * (Level → selected stage → map → progress → training) via `grid-template-areas`.
+ *
+ * From lg up, `.home-sidebar` becomes a real flex column instead, holding all four cards
+ * as ordinary stacked siblings with one `gap` between them. This is the fix for the old
+ * "large gap above the details card": that bug came from `map` spanning four separate
+ * grid row-tracks while a much shorter sidebar card sat in each track — the grid had to
+ * inflate those tracks to match the map's height, and the extra space landed unevenly
+ * between cards. Grouping the sidebar into one flex column sidesteps that entirely: the
+ * sidebar's height is just the sum of its own four cards' natural heights plus `gap`,
+ * independent of how tall the map is. */
 .home-grid {
   display: grid;
   gap: 1.75rem;
@@ -314,17 +449,28 @@ body {
     "training";
 }
 
+.home-sidebar {
+  display: contents;
+}
+
 @media (min-width: 1024px) {
   .home-grid {
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) 300px;
     column-gap: 2rem;
-    row-gap: 1.5rem;
-    grid-template-areas:
-      "map levelcard"
-      "map details"
-      "map progress"
-      "map training";
+    grid-template-areas: "map sidebar";
     align-items: start;
+  }
+
+  .home-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.125rem;
+    grid-area: sidebar;
+    position: sticky;
+    top: 24px;
+    align-self: start;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
   }
 }
 
