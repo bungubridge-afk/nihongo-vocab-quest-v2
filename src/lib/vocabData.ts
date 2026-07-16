@@ -383,6 +383,33 @@ export const vocabData: VocabItem[] = [
     detailTip:
       "„学校“ bedeutet „Schule“. Mit „学校に行きます“ sagst du „Ich gehe zur Schule“ – „に“ zeigt hier das Ziel. Mit „学校で勉強します“ sagst du „Ich lerne in der Schule“ – „で“ zeigt den Ort der Handlung. Ein häufiger Anfängerfehler ist, „に“ und „で“ zu vertauschen. Am besten lernst du beide Sätze als Paar: 学校に行きます (wohin) und 学校で勉強します (wo).",
     relatedVocabIds: ["teacher", "study", "today", "japaneseLanguage"],
+    usageExamples: [
+      {
+        id: "school-going-today-casual",
+        japanese: "今日は学校に行く。",
+        kana: "きょうはがっこうにいく。",
+        romaji: "kyou wa gakkou ni iku",
+        german: "Heute gehe ich zur Schule.",
+        register: "casual",
+        suitableFor: ["friend", "family", "classmate"],
+        contextGerman: "Du sprichst locker mit einem Freund oder Mitschüler.",
+        noteGerman: "Die einfache Form „行く“ ohne „です/ます“ klingt unter Freunden ganz normal.",
+        contrastGroup: "school-going-today",
+      },
+      {
+        id: "school-going-today-polite",
+        japanese: "今日は学校に行きます。",
+        kana: "きょうはがっこうにいきます。",
+        romaji: "kyou wa gakkou ni ikimasu",
+        german: "Heute gehe ich zur Schule.",
+        register: "polite",
+        suitableFor: ["teacher", "stranger", "work"],
+        contextGerman:
+          "Du sprichst höflich mit einer Lehrkraft oder einer weniger vertrauten Person.",
+        noteGerman: "Die „-masu“-Form ist die sichere Wahl, wenn du dir nicht sicher bist.",
+        contrastGroup: "school-going-today",
+      },
+    ],
   },
   {
     id: "teacher",
@@ -405,6 +432,34 @@ export const vocabData: VocabItem[] = [
     detailTip:
       "„先生“ bedeutet „Lehrer“ oder „Lehrerin“. In Japan wird das Wort auch für andere Berufe mit Respekt benutzt, zum Beispiel für Ärztinnen und Ärzte. Als Anfänger merkst du dir „先生“ am einfachsten als „Lehrer/Lehrerin“. Wichtig: Du nennst dich selbst nie „先生“ – das Wort ist eine Anrede für andere, nicht für dich.",
     relatedVocabIds: ["school", "study", "japaneseLanguage"],
+    usageExamples: [
+      {
+        id: "study-with-teacher-casual",
+        japanese: "先生と日本語を勉強する。",
+        kana: "せんせいとにほんごをべんきょうする。",
+        romaji: "sensei to nihongo o benkyou suru",
+        german: "Ich lerne mit der Lehrkraft Japanisch.",
+        register: "casual",
+        suitableFor: ["friend", "family", "classmate"],
+        contextGerman: "Du erzählst einem Freund locker davon, dass du mit der Lehrkraft lernst.",
+        noteGerman:
+          "Diese lockere Form richtet sich an einen Freund, nicht an die Lehrkraft selbst.",
+        contrastGroup: "study-with-teacher",
+      },
+      {
+        id: "study-with-teacher-polite",
+        japanese: "先生と日本語を勉強します。",
+        kana: "せんせいとにほんごをべんきょうします。",
+        romaji: "sensei to nihongo o benkyou shimasu",
+        german: "Ich lerne mit der Lehrkraft Japanisch.",
+        register: "polite",
+        suitableFor: ["teacher", "stranger", "work"],
+        contextGerman:
+          "Du sprichst höflich darüber – zum Beispiel mit der Lehrkraft selbst oder in einer offiziellen Situation.",
+        noteGerman: "Mit „-masu“ ist die Aussage auch für die Lehrkraft selbst passend.",
+        contrastGroup: "study-with-teacher",
+      },
+    ],
   },
   {
     id: "japaneseLanguage",
@@ -427,6 +482,32 @@ export const vocabData: VocabItem[] = [
     detailTip:
       "„日本語“ bedeutet „Japanisch“ bzw. „die japanische Sprache“. Mit „日本語を勉強します“ sagst du „Ich lerne Japanisch“, mit „日本語が好きです“ sagst du „Ich mag Japanisch“. Verwechsle „日本“ (Japan, das Land) nicht mit „日本語“ (Japanisch, die Sprache) – das „語“ am Ende steht für „Sprache“ und taucht bei vielen Sprachnamen auf.",
     relatedVocabIds: ["study", "school", "teacher", "today"],
+    usageExamples: [
+      {
+        id: "like-japanese-casual",
+        japanese: "日本語が好き。",
+        kana: "にほんごがすき。",
+        romaji: "nihongo ga suki",
+        german: "Ich mag Japanisch.",
+        register: "casual",
+        suitableFor: ["friend", "family", "classmate"],
+        contextGerman: "Du sprichst locker mit einem Freund oder einer Freundin.",
+        noteGerman: "Ohne „です“ klingt „好き“ unter Freunden natürlich und nicht abgehackt.",
+        contrastGroup: "like-japanese",
+      },
+      {
+        id: "like-japanese-polite",
+        japanese: "日本語が好きです。",
+        kana: "にほんごがすきです。",
+        romaji: "nihongo ga suki desu",
+        german: "Ich mag Japanisch.",
+        register: "polite",
+        suitableFor: ["teacher", "stranger", "work"],
+        contextGerman: "Du sprichst höflich, zum Beispiel mit einer neuen Bekanntschaft.",
+        noteGerman: "„です“ macht aus der Aussage eine höfliche, vollständige Antwort.",
+        contrastGroup: "like-japanese",
+      },
+    ],
   },
   {
     id: "study",
@@ -449,6 +530,32 @@ export const vocabData: VocabItem[] = [
     detailTip:
       "„勉強する“ bedeutet „lernen“ oder „studieren“, höflich „勉強します“. Das Muster ist immer [Fach/Sprache] + を + 勉強します: 日本語を勉強します = Ich lerne Japanisch, 学校で勉強します = Ich lerne in der Schule. Anders als im Deutschen brauchst du für das Lernobjekt immer „を“ – nicht einfach nur das Wort direkt vor dem Verb.",
     relatedVocabIds: ["japaneseLanguage", "school", "teacher", "today"],
+    usageExamples: [
+      {
+        id: "study-japanese-casual",
+        japanese: "日本語を勉強する。",
+        kana: "にほんごをべんきょうする。",
+        romaji: "nihongo o benkyou suru",
+        german: "Ich lerne Japanisch.",
+        register: "casual",
+        suitableFor: ["friend", "family", "classmate"],
+        contextGerman: "Du sprichst locker mit einem Freund oder Familienmitglied.",
+        noteGerman: "„勉強する“ ohne „-masu“ ist die Wörterbuchform, typisch im lockeren Gespräch.",
+        contrastGroup: "study-japanese",
+      },
+      {
+        id: "study-japanese-polite",
+        japanese: "日本語を勉強します。",
+        kana: "にほんごをべんきょうします。",
+        romaji: "nihongo o benkyou shimasu",
+        german: "Ich lerne Japanisch.",
+        register: "polite",
+        suitableFor: ["teacher", "stranger", "work"],
+        contextGerman: "Du sprichst höflich, zum Beispiel mit einer Lehrkraft.",
+        noteGerman: "„勉強します“ ist die sichere Form für Gespräche außerhalb des Freundeskreises.",
+        contrastGroup: "study-japanese",
+      },
+    ],
   },
   {
     id: "today",
@@ -471,6 +578,32 @@ export const vocabData: VocabItem[] = [
     detailTip:
       "„今日“ bedeutet „heute“, gesprochen „きょう“. Meistens steht es ganz am Satzanfang: 今日は学校に行きます = Heute gehe ich zur Schule, 今日、日本語を勉強します = Heute lerne ich Japanisch. Das „は“ nach „今日“ wird „wa“ ausgesprochen, nicht „ha“ – ein klassischer Stolperstein für Anfänger, den du dir am besten sofort einprägst.",
     relatedVocabIds: ["study", "school", "japaneseLanguage"],
+    usageExamples: [
+      {
+        id: "study-today-casual",
+        japanese: "今日は学校で勉強する。",
+        kana: "きょうはがっこうでべんきょうする。",
+        romaji: "kyou wa gakkou de benkyou suru",
+        german: "Heute lerne ich in der Schule.",
+        register: "casual",
+        suitableFor: ["friend", "family", "classmate"],
+        contextGerman: "Du erzählst einem Freund locker von deinem Tag.",
+        noteGerman: "Für den lockeren Plausch reicht die einfache Form ohne „です/ます“.",
+        contrastGroup: "study-today",
+      },
+      {
+        id: "study-today-polite",
+        japanese: "今日は学校で勉強します。",
+        kana: "きょうはがっこうでべんきょうします。",
+        romaji: "kyou wa gakkou de benkyou shimasu",
+        german: "Heute lerne ich in der Schule.",
+        register: "polite",
+        suitableFor: ["teacher", "stranger", "work"],
+        contextGerman: "Du sprichst höflich, zum Beispiel mit einer Lehrkraft oder in der Schule.",
+        noteGerman: "Die „-masu“-Form passt zu jeder formelleren oder unbekannten Situation.",
+        contrastGroup: "study-today",
+      },
+    ],
   },
 
   // --- Freunde ---
