@@ -379,8 +379,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["学校に行きます。"],
     commonPatterns: ["〜に行きます"],
     relatedExpressions: ["学校の後で"],
-    shortTip: "„学校“ ist ein Grundwort im Alltag.",
-    detailTip: "„学校に行きます“ bedeutet „Ich gehe zur Schule“.",
+    shortTip: "„学校“ ist dein Grundwort für alles rund ums Lernen.",
+    detailTip:
+      "„学校“ bedeutet „Schule“. Mit „学校に行きます“ sagst du „Ich gehe zur Schule“ – „に“ zeigt hier das Ziel. Mit „学校で勉強します“ sagst du „Ich lerne in der Schule“ – „で“ zeigt den Ort der Handlung. Ein häufiger Anfängerfehler ist, „に“ und „で“ zu vertauschen. Am besten lernst du beide Sätze als Paar: 学校に行きます (wohin) und 学校で勉強します (wo).",
     relatedVocabIds: ["teacher", "study", "today", "japaneseLanguage"],
   },
   {
@@ -400,9 +401,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["先生に聞きます。"],
     commonPatterns: ["〜に聞きます"],
     relatedExpressions: ["先生、質問があります"],
-    shortTip: "„先生“ ist eine höfliche Anrede, nicht nur in der Schule.",
+    shortTip: "„先生“ ist eine höfliche Anrede – nicht nur für Lehrer.",
     detailTip:
-      "„先生“ wird nicht nur für Lehrer benutzt, sondern auch für Ärzte und andere Berufe als höfliche Anrede.",
+      "„先生“ bedeutet „Lehrer“ oder „Lehrerin“. In Japan wird das Wort auch für andere Berufe mit Respekt benutzt, zum Beispiel für Ärztinnen und Ärzte. Als Anfänger merkst du dir „先生“ am einfachsten als „Lehrer/Lehrerin“. Wichtig: Du nennst dich selbst nie „先生“ – das Wort ist eine Anrede für andere, nicht für dich.",
     relatedVocabIds: ["school", "study", "japaneseLanguage"],
   },
   {
@@ -422,8 +423,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["日本語を勉強します。"],
     commonPatterns: ["〜を勉強します"],
     relatedExpressions: ["日本語が好きです"],
-    shortTip: "„〜を勉強します“ zeigt an, was man lernt.",
-    detailTip: "„日本語を勉強します“ bedeutet „Ich lerne Japanisch“.",
+    shortTip: "„日本語“ ist die Sprache, „日本“ ist das Land.",
+    detailTip:
+      "„日本語“ bedeutet „Japanisch“ bzw. „die japanische Sprache“. Mit „日本語を勉強します“ sagst du „Ich lerne Japanisch“, mit „日本語が好きです“ sagst du „Ich mag Japanisch“. Verwechsle „日本“ (Japan, das Land) nicht mit „日本語“ (Japanisch, die Sprache) – das „語“ am Ende steht für „Sprache“ und taucht bei vielen Sprachnamen auf.",
     relatedVocabIds: ["study", "school", "teacher", "today"],
   },
   {
@@ -443,9 +445,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["日本語を勉強します。"],
     commonPatterns: ["〜を勉強します"],
     relatedExpressions: ["勉強します"],
-    shortTip: "„勉強する“ ist ein „Suru-Verb“.",
+    shortTip: "„勉強する“ heißt „lernen“ – die höfliche Form ist „勉強します“.",
     detailTip:
-      "„勉強する“ besteht aus dem Nomen „勉強“ und „する“. Die höfliche Form ist „勉強します“.",
+      "„勉強する“ bedeutet „lernen“ oder „studieren“, höflich „勉強します“. Das Muster ist immer [Fach/Sprache] + を + 勉強します: 日本語を勉強します = Ich lerne Japanisch, 学校で勉強します = Ich lerne in der Schule. Anders als im Deutschen brauchst du für das Lernobjekt immer „を“ – nicht einfach nur das Wort direkt vor dem Verb.",
     relatedVocabIds: ["japaneseLanguage", "school", "teacher", "today"],
   },
   {
@@ -465,9 +467,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["今日、学校に行きます。"],
     commonPatterns: ["今日、〜"],
     relatedExpressions: ["今日は"],
-    shortTip: "„今日“ steht meistens am Satzanfang.",
+    shortTip: "„今日“ steht fast immer am Satzanfang, oft mit „は“.",
     detailTip:
-      "„今日“ bedeutet „heute“ und wird als Zeitangabe oft an den Satzanfang gestellt.",
+      "„今日“ bedeutet „heute“, gesprochen „きょう“. Meistens steht es ganz am Satzanfang: 今日は学校に行きます = Heute gehe ich zur Schule, 今日、日本語を勉強します = Heute lerne ich Japanisch. Das „は“ nach „今日“ wird „wa“ ausgesprochen, nicht „ha“ – ein klassischer Stolperstein für Anfänger, den du dir am besten sofort einprägst.",
     relatedVocabIds: ["study", "school", "japaneseLanguage"],
   },
 
