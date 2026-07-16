@@ -97,6 +97,48 @@ function RowDecoration({ index, sideAwayFrom }: { index: number; sideAwayFrom: "
 }
 
 /**
+ * The "sandō" (参道) — the shrine approach — drawn along the finale's own row, i.e. the
+ * segment that leads from the last regular stage into the finale. A lantern pair flanking
+ * the path plus a couple of sakura accents make that final stretch read as a deliberate
+ * approach to a destination rather than just more empty road. Tint follows the finale's
+ * own state: cool/gray while locked (never suggesting it's already reachable), warm
+ * gold-green once available, fuller green once completed.
+ */
+function ApproachDecoration({ finaleStatus }: { finaleStatus: QuestNodeStatus }) {
+  const isLocked = finaleStatus === "locked";
+  const isDone = finaleStatus === "completed";
+  const tint = isLocked ? "var(--color-ink-soft)" : isDone ? "var(--color-primary)" : "var(--color-gold)";
+  const opacity = isLocked ? 0.22 : 0.34;
+
+  return (
+    <g aria-hidden="true">
+      {/* Lantern pair flanking the approach, partway down the segment. */}
+      <g transform="translate(16, 62)" opacity={opacity} fill={tint}>
+        <rect x="-2.6" y="-2" width="5.2" height="3.2" rx="0.6" />
+        <rect x="-3.4" y="1" width="6.8" height="1.4" rx="0.5" />
+        <path d="M-3.6 2.4h7.2l-1 2.4h-5.2z" />
+        <rect x="-1.2" y="-5.4" width="2.4" height="3.6" rx="0.5" />
+        <path d="M-2.2 -5.4 L0 -7.4 L2.2 -5.4 Z" />
+      </g>
+      <g transform="translate(84, 62) scale(-1, 1)" opacity={opacity} fill={tint}>
+        <rect x="-2.6" y="-2" width="5.2" height="3.2" rx="0.6" />
+        <rect x="-3.4" y="1" width="6.8" height="1.4" rx="0.5" />
+        <path d="M-3.6 2.4h7.2l-1 2.4h-5.2z" />
+        <rect x="-1.2" y="-5.4" width="2.4" height="3.6" rx="0.5" />
+        <path d="M-2.2 -5.4 L0 -7.4 L2.2 -5.4 Z" />
+      </g>
+      {/* A few sakura petals drifting near the approach. */}
+      <g opacity={opacity * 0.9} fill="var(--color-danger-border)">
+        <circle cx="30" cy="40" r="1.2" />
+        <circle cx="33" cy="42" r="1" />
+        <circle cx="70" cy="48" r="1.1" />
+        <circle cx="67" cy="45" r="0.9" />
+      </g>
+    </g>
+  );
+}
+
+/**
  * Renders the current world's stages as an ordinary vertical flow: one independent row
  * per stage, each with its own minimum height (see `.quest-row` in globals.css). Because
  * every stage owns its own row instead of sharing one giant absolutely-positioned canvas,
@@ -162,6 +204,7 @@ export function QuestMap({ stages, selectedId, onSelect, onStart, theme = "kyoto
         return (
           <div
             key={stage.id}
+            data-current={stage.status === "current" ? "true" : undefined}
             className={["quest-row", stage.isFinale ? "quest-row-finale" : ""].filter(Boolean).join(" ")}
           >
             <svg className="quest-row-path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
@@ -181,7 +224,11 @@ export function QuestMap({ stages, selectedId, onSelect, onStart, theme = "kyoto
                 vectorEffect="non-scaling-stroke"
                 className={`hidden sm:block ${ROAD_STATE_CLASS[roadState]}`}
               />
-              <RowDecoration index={index} sideAwayFrom={side} />
+              {stage.isFinale ? (
+                <ApproachDecoration finaleStatus={stage.status} />
+              ) : (
+                <RowDecoration index={index} sideAwayFrom={side} />
+              )}
             </svg>
 
             <div
@@ -248,25 +295,27 @@ function MapScenery({ theme }: { theme: AreaThemeId }) {
         <ellipse cx="70" cy="66" rx="7" ry="1.2" />
       </g>
 
-      {/* Distant mountains, one Fuji-like peak with a faint snow cap — small, not centered. */}
-      <g opacity="0.12" fill="var(--color-ink-soft)">
-        <path d="M0 20 L10 12 L20 20 Z" />
-        <path d="M62 22 L76 8 L92 22 Z" />
+      {/* Distant mountains, one Fuji-like peak with a faint snow cap — pushed to the top
+          corner (y < 8) so it stays within the start-marker strip, not behind a stage's own
+          row/card further down, and kept very low-opacity so it never competes with text. */}
+      <g opacity="0.08" fill="var(--color-ink-soft)">
+        <path d="M0 7 L7 2 L14 7 Z" />
+        <path d="M84 8 L92 2 L99 8 Z" />
       </g>
-      <path d="M67 15.5 L76 8 L85 15.5 Z" opacity="0.22" fill="#ffffff" />
+      <path d="M87.5 5 L92 2 L96.5 5 Z" opacity="0.16" fill="#ffffff" />
 
-      {/* Torii silhouette near the start of the journey, off to one side. */}
-      <g transform="translate(10, 8)" opacity="0.16" fill="var(--color-danger)">
+      {/* Torii silhouette near the start of the journey, tucked into the top-left corner. */}
+      <g transform="translate(6, 4)" opacity="0.14" fill="var(--color-danger)">
         <path d="M-4 0h8v0.9h-8zM-3.4 1.2h6.8v0.7h-6.8z" />
         <rect x="-3" y="1.9" width="1" height="4.4" />
         <rect x="2" y="1.9" width="1" height="4.4" />
       </g>
 
-      {/* Faint machiya rooftop skyline running along the right edge. */}
-      <g opacity="0.1" fill="var(--color-ink-soft)">
-        <path d="M96 30 l4 -3 l4 3 v6 h-8 z" />
-        <path d="M95 55 l3.5 -2.6 l3.5 2.6 v5 h-7 z" />
-        <path d="M97 80 l3 -2.2 l3 2.2 v4.5 h-6 z" />
+      {/* Faint machiya rooftop skyline hugging the right edge only. */}
+      <g opacity="0.08" fill="var(--color-ink-soft)">
+        <path d="M97 30 l3 -2.2 l3 2.2 v5 h-6 z" />
+        <path d="M96.5 55 l2.7 -2 l2.7 2 v4 h-5.4 z" />
+        <path d="M97.5 80 l2.3 -1.7 l2.3 1.7 v3.5 h-4.6 z" />
       </g>
     </svg>
   );

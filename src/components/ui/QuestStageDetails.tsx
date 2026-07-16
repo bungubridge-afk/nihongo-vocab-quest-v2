@@ -15,6 +15,8 @@ export interface QuestStageDetailsProps {
   icon: QuestStageIcon;
   /** Narrative blurb overriding `category.description`, if the map's metadata has one. */
   flavorText?: string;
+  /** Short "what you'll practice" line, shown in its own labeled block — not on the map card. */
+  learningSummary?: string;
   isFinale?: boolean;
   /** Present only when the stage can actually be started (i.e. not locked). */
   onStart?: () => void;
@@ -57,6 +59,7 @@ export function QuestStageDetails({
   status,
   icon,
   flavorText,
+  learningSummary,
   isFinale = false,
   onStart,
 }: QuestStageDetailsProps) {
@@ -88,6 +91,15 @@ export function QuestStageDetails({
       </div>
 
       <p className="mt-3 text-sm text-[var(--color-ink-soft)]">{description}</p>
+
+      {learningSummary ? (
+        <div className="mt-2.5 rounded-xl bg-[var(--color-primary-soft)] px-2.5 py-2">
+          <p className="text-[11px] font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
+            Was du lernst
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--color-ink)]">{learningSummary}</p>
+        </div>
+      ) : null}
 
       {isLocked ? (
         <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
@@ -137,6 +149,13 @@ export function QuestStageCompactCard({
   const isLocked = status === "locked";
   const isCompleted = status === "completed";
   const isCurrent = status === "current";
+  // "current" (green glow) and any unlocked finale — whether it's newly available (gold
+  // glow) or already completed (gold+green "done" glow) — already carry their own
+  // strongest treatment; layering the selection outline on top of any of those was the
+  // reported "double border". The outline is reserved for when a *different*, otherwise
+  // unremarkable (plain completed/locked) stage is explicitly selected instead.
+  const hasOwnStrongTreatment = isCurrent || (isFinale && !isLocked);
+  const showSelectionRing = isSelected && !hasOwnStrongTreatment;
 
   const cardClasses = [
     "quest-row-card rounded-2xl border-2 bg-white px-3 py-2.5 shadow-sm",
@@ -144,7 +163,7 @@ export function QuestStageCompactCard({
     isCompleted ? "quest-row-card-completed" : "",
     isLocked ? "quest-row-card-locked quest-node-mist" : "",
     isFinale && !isLocked ? "quest-row-card-finale" : "",
-    isSelected ? "quest-row-card-selected" : "",
+    showSelectionRing ? "quest-row-card-selected" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -152,14 +171,23 @@ export function QuestStageCompactCard({
   return (
     <div className={cardClasses} data-side={side} style={style}>
       <p className="text-sm leading-tight font-bold text-[var(--color-ink)]">{title}</p>
-      <p className="quest-row-card-desc mt-1 text-xs leading-snug text-[var(--color-ink-soft)]">
+      <p
+        className={[
+          "quest-row-card-desc mt-1 text-xs leading-snug text-[var(--color-ink-soft)]",
+          isLocked ? "quest-row-card-desc-1-line" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         {description}
       </p>
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
         <Badge variant={STATUS_BADGE_VARIANT[status]}>{STATUS_LABEL[status]}</Badge>
-        <span className="text-[11px] font-semibold text-[var(--color-ink-soft)]">
-          +{rewardXp} XP{cardCount > 0 ? ` · ${cardCount} Karten` : ""}
-        </span>
+        {!isLocked ? (
+          <span className="text-[11px] font-semibold text-[var(--color-ink-soft)]">
+            +{rewardXp} XP{cardCount > 0 ? ` · ${cardCount} Karten` : ""}
+          </span>
+        ) : null}
       </div>
       {!isLocked ? (
         <Button

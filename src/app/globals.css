@@ -178,6 +178,19 @@ body {
   pointer-events: none;
 }
 
+/* A soft, local wash behind the current stage only — lightens whatever background scenery
+   shows through right where the eye should land, without touching the deco layer's actual
+   shapes/positions (which stay identical for every row). Sits above the shared background
+   (z-index 0/auto) but below the road/node/card (z-index 2), and is purely decorative. */
+.quest-row[data-current="true"]::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.55), transparent 68%);
+}
+
 .quest-path-done {
   stroke: var(--color-primary);
 }
@@ -224,6 +237,7 @@ body {
 }
 
 .quest-node-button {
+  position: relative;
   min-width: 44px;
   min-height: 44px;
 }
@@ -281,6 +295,12 @@ body {
   overflow: hidden;
 }
 
+/* Locked cards get one line, not two — the map should read as "here's what's next", not a
+   full pitch for a stage you can't start yet. */
+.quest-row-card-desc-1-line {
+  -webkit-line-clamp: 1;
+}
+
 /* completed/locked are deliberately quieter than current — current is the one card that
    should pull the eye. */
 .quest-row-card-current {
@@ -309,10 +329,13 @@ body {
   outline-offset: 2px;
 }
 
+/* Completed nodes get a quieter glow than current — smaller ring, tighter falloff — so a
+   row of completed stages doesn't visually compete with the one stage that's actually
+   playable right now. */
 .quest-node-glow {
   box-shadow:
-    0 0 0 4px var(--color-primary-soft),
-    0 0 18px -4px var(--color-primary);
+    0 0 0 3px var(--color-primary-soft),
+    0 0 10px -6px var(--color-primary);
 }
 
 .quest-node-glow-gold {
@@ -367,10 +390,14 @@ body {
   color: #fff;
 }
 
-/* "Du bist hier" flag above the current landmark. */
+/* "Du bist hier" flag directly above the current landmark. Anchored to `.quest-node-button`
+   itself (now explicitly `position: relative`, see above) rather than any ancestor, so it
+   is always exactly 10px above *this* node's own circle — never adrift relative to the
+   row's surrounding empty space. The tail (::after) below it visually skewers down toward
+   the circle, reinforcing "this flag belongs to that node" at a glance. */
 .quest-node-here {
   position: absolute;
-  bottom: calc(100% + 9px);
+  bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -384,6 +411,7 @@ body {
   padding: 3px 9px;
   border-radius: 999px;
   z-index: 3;
+  pointer-events: none;
 }
 
 .quest-node-here::after {
@@ -404,9 +432,14 @@ body {
 
 /* ===== Next-area preview (below the map) ===== */
 
+/* `margin-top` guarantees real empty space between the finale row's own bottom edge and
+   this connector, independent of how tall the finale's card happens to render (its
+   description can wrap to more lines, its row can grow) — the gap is never just
+   "whatever happened to be left over". */
 .next-area-connector {
   position: relative;
   height: 28px;
+  margin-top: 20px;
 }
 
 .next-area-connector::before {
@@ -422,6 +455,17 @@ body {
     transparent 6px 11px
   );
   transform: translateX(-50%);
+}
+
+/* Once the finale is completed, the connector picks up a faint green tint instead of
+   neutral gray — "the road keeps going" — without changing the still-locked preview card
+   below it, which stays exactly as muted as ever. */
+.next-area-connector-active::before {
+  background: repeating-linear-gradient(
+    180deg,
+    var(--color-primary-border) 0 6px,
+    transparent 6px 11px
+  );
 }
 
 /* ===== Home layout grid =====

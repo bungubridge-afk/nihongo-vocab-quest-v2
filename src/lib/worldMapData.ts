@@ -52,16 +52,24 @@ export interface StageMapMeta {
    * description — no duplicate copy to keep in sync.
    */
   flavorText?: string;
+  /**
+   * One short line naming *what* the player practices in this Etappe, shown only in the
+   * sidebar's "Was du lernst" block — distinct from `description`/`flavorText` (which say
+   * what the story beat is), so the sidebar has something the compact map card doesn't
+   * already say instead of just repeating it in fewer words.
+   */
+  learningSummary: string;
 }
 
 export const stageMapMeta: Record<CategoryId, StageMapMeta> = {
-  cafe: { icon: "cafe" },
-  reise: { icon: "reise" },
-  schule: { icon: "schule" },
-  freunde: { icon: "freunde" },
+  cafe: { icon: "cafe", learningSummary: "Bestellen, Essen und Trinken." },
+  reise: { icon: "reise", learningSummary: "Orte, Verkehrsmittel und Wegfragen." },
+  schule: { icon: "schule", learningSummary: "Schule, Lernen und der heutige Tag." },
+  freunde: { icon: "freunde", learningSummary: "Treffen, Sprechen und Pläne." },
   review: {
     icon: "finale",
     flavorText: "Zeige, was du auf deiner ersten Reise gelernt hast.",
+    learningSummary: "Wiederhole Wörter und Sätze aus deiner ersten Reise.",
   },
 };
 

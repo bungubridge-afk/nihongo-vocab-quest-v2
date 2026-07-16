@@ -304,6 +304,7 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
   const selectedStage = stages.find((stage) => stage.id === selectedId) ?? stages[0];
   const selectedCategory = getQuestCategory(selectedStage.id);
   const selectedMeta = stageMapMeta[selectedStage.id];
+  const finaleCompleted = stages.find((stage) => stage.isFinale)?.status === "completed";
 
   return (
     <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
@@ -375,7 +376,7 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
               onStart={(id) => router.push(`/lesson?category=${id}`)}
               theme={currentWorld.theme.id}
             />
-            <NextAreaPreview />
+            <NextAreaPreview finaleCompleted={finaleCompleted} />
           </div>
 
           <div className="home-sidebar">
@@ -409,6 +410,7 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
                   status={selectedStage.status}
                   icon={selectedMeta.icon}
                   flavorText={selectedMeta.flavorText}
+                  learningSummary={selectedMeta.learningSummary}
                   isFinale={selectedStage.isFinale}
                   onStart={
                     selectedStage.status !== "locked"
@@ -476,12 +478,18 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
  * The next, still-fogged region(s) below the current map — silhouettes, not clickable
  * cards. Reads from `nextAreaPreviews` so a second/third upcoming area later is just
  * another array entry, not new markup here. The dotted connector always sits centered
- * (50%) because the map's finale lane is always centered too.
+ * (50%) because the map's finale lane is always centered too. Once the finale itself is
+ * completed, the connector picks up a faint green tint — "the road keeps going" — without
+ * making the still-locked preview card itself look any more available than it is.
  */
-function NextAreaPreview() {
+function NextAreaPreview({ finaleCompleted }: { finaleCompleted: boolean }) {
   return (
     <>
-      <div className="next-area-connector" />
+      <div
+        className={["next-area-connector", finaleCompleted ? "next-area-connector-active" : ""]
+          .filter(Boolean)
+          .join(" ")}
+      />
       {nextAreaPreviews.map((area) => (
         <div
           key={area.id}
