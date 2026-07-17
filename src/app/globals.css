@@ -197,6 +197,17 @@ body {
   background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.55), transparent 68%);
 }
 
+/* Home's auto-scroll target (the current stage, or the finale row once every regular
+   stage — and possibly the finale itself — is completed). Extra breathing room around
+   the row so `scrollIntoView({ block: "center" })` doesn't land with the node or the
+   compact card's Starten button flush against the viewport edge, especially on mobile
+   where the whole row (node + "Du bist hier" + stacked card) is tall. Purely a scroll
+   offset — no visual effect of its own. */
+.quest-row[data-quest-scroll-target="true"] {
+  scroll-margin-top: 80px;
+  scroll-margin-bottom: 80px;
+}
+
 .quest-path-done {
   stroke: var(--color-primary);
 }

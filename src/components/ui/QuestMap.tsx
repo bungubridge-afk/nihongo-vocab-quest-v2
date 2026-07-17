@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import type { CategoryId } from "@/types/learning";
 import { QuestNode } from "@/components/ui/QuestNode";
@@ -150,6 +153,58 @@ function ApproachDecoration({ finaleStatus }: { finaleStatus: QuestNodeStatus })
 export function QuestMap({ stages, selectedId, onSelect, onStart, theme = "kyoto", className }: QuestMapProps) {
   const lanes = stages.map((stage, index) => laneXFor(index, stage.isFinale));
 
+  // Exactly one stage is ever the auto-scroll target: the "current" stage normally, or
+  // (once every regular stage is completed, so none of them is "current") the finale row
+  // — whether it's still waiting to be played or already completed. Never both at once.
+  const hasCurrentStage = stages.some((stage) => stage.status === "current");
+  const scrollTargetRef = useRef<HTMLDivElement | null>(null);
+  const hasAutoScrolledRef = useRef(false);
+
+  useEffect(() => {
+    // Runs once per mount (guarded below), not on every prop update — selecting a
+    // different node or switching the sidebar's detail panel only changes props on this
+    // already-mounted component, so this effect body never re-fires for those.
+    if (hasAutoScrolledRef.current) return undefined;
+
+    let rafId: number | null = null;
+    let innerRafId: number | null = null;
+    let cancelled = false;
+
+    rafId = requestAnimationFrame(() => {
+      // A second frame gives the row/card/background layout (and the sticky sidebar)
+      // one more tick to settle after the progress data first painted, before measuring.
+      innerRafId = requestAnimationFrame(() => {
+        if (cancelled || hasAutoScrolledRef.current) return;
+        // Marked here — right as the one-time decision is made — so this never runs
+        // twice for this Home mount, whether or not it ends up actually scrolling.
+        hasAutoScrolledRef.current = true;
+
+        const target = scrollTargetRef.current;
+        if (!target) return;
+
+        const rect = target.getBoundingClientRect();
+        const alreadyVisible = rect.top >= 100 && rect.bottom <= window.innerHeight - 80;
+        if (alreadyVisible) return;
+
+        const prefersReducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+        target.scrollIntoView({
+          behavior: prefersReducedMotion ? "auto" : "smooth",
+          block: "center",
+          inline: "nearest",
+        });
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      if (innerRafId !== null) cancelAnimationFrame(innerRafId);
+    };
+  }, []);
+
   return (
     <div className={["quest-map-scroll", className].filter(Boolean).join(" ")}>
       <MapScenery theme={theme} />
@@ -180,6 +235,8 @@ export function QuestMap({ stages, selectedId, onSelect, onStart, theme = "kyoto
         const laneX = lanes[index];
         const side = sideFor(laneX, stage.isFinale);
         const previousStatus = index === 0 ? null : stages[index - 1].status;
+        const isScrollTarget =
+          stage.status === "current" || (stage.isFinale === true && !hasCurrentStage);
 
         let roadState: "done" | "upcoming" | "todo";
         if (stage.status === "completed" || stage.status === "current" || stage.status === "review") {
@@ -204,7 +261,9 @@ export function QuestMap({ stages, selectedId, onSelect, onStart, theme = "kyoto
         return (
           <div
             key={stage.id}
+            ref={isScrollTarget ? scrollTargetRef : undefined}
             data-current={stage.status === "current" ? "true" : undefined}
+            data-quest-scroll-target={isScrollTarget ? "true" : undefined}
             className={["quest-row", stage.isFinale ? "quest-row-finale" : ""].filter(Boolean).join(" ")}
           >
             <svg className="quest-row-path" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
