@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Card, UsageExampleComparison } from "@/components/ui";
 import { vocabData } from "@/lib/vocabData";
 import { getQuestCategory } from "@/lib/questData";
 import { speakJapanese } from "@/lib/speech";
 import { getRegisterLabel } from "@/lib/registerData";
+import {
+  buildVocabularySearchIndex,
+  matchesNormalizedHaystack,
+  normalizeVocabularySearchText,
+} from "@/lib/vocabularySearch";
 import {
   getCollectedCards,
   getCompletedCategories,
@@ -105,6 +110,18 @@ function getCardStatus(vocab: VocabItem, progress: ProgressSnapshot): CardStatus
   return "locked";
 }
 
+/**
+ * Locked and not-yet-collected ("sammelbar") cards hide every text field (kanji, kana,
+ * romaji, German, examples) behind a `???` placeholder. A single source of truth for
+ * "this card is hidden" so the search-index builder and the render filter agree exactly
+ * on which cards must never have their text fields read. Note `getCardStatus` itself only
+ * reads `vocab.id` and `vocab.categoryId` — never the hidden text fields — so deciding
+ * "is this hidden?" never touches the protected content.
+ */
+function isHiddenStatus(status: CardStatus): boolean {
+  return status === "locked" || status === "sammelbar";
+}
+
 function getNextCollectibleCategoryLabel(unlockedCategories: CategoryId[]): string {
   const next = VOCAB_CATEGORY_ORDER.find((id) => !unlockedCategories.includes(id));
   if (!next) return "Alle freigeschaltet";
@@ -114,6 +131,11 @@ function getNextCollectibleCategoryLabel(unlockedCategories: CategoryId[]): stri
 
 function truncate(text: string, maxLength: number): string {
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+/** "0 Wortkarten" / "1 Wortkarte" / "10 Wortkarten" — German singular/plural. */
+function formatResultCount(count: number): string {
+  return count === 1 ? "1 Wortkarte" : `${count} Wortkarten`;
 }
 
 interface PageState {
@@ -128,6 +150,26 @@ export default function VocabularyPage() {
   const [state, setState] = useState<PageState>(INITIAL_STATE);
   const [categoryFilter, setCategoryFilter] = useState<CategoryId | "all">("all");
   const [registerFilter, setRegisterFilter] = useState<RegisterFilter>("all");
+  const [query, setQuery] = useState("");
+
+  // Search index (word id → normalized haystack), built ONLY for cards the player has
+  // actually collected. An uncollected/locked card's kanji/kana/romaji/German is never
+  // read here — its hidden content never enters the index in the first place, rather than
+  // being read and then filtered out of the results. The predicate decides eligibility
+  // from collection status alone (getCardStatus reads only id/categoryId), so no hidden
+  // text field is touched to build the index. Keyed on `state.progress`, so it rebuilds
+  // when the collection changes — not on every keystroke, keeping typing cheap as the
+  // word list grows.
+  const searchHaystacks = useMemo(() => {
+    const currentProgress = state.progress;
+    if (!currentProgress) return new Map<string, string>();
+    return buildVocabularySearchIndex(
+      vocabData,
+      (vocab) => !isHiddenStatus(getCardStatus(vocab, currentProgress))
+    );
+  }, [state.progress]);
+
+  const normalizedQuery = useMemo(() => normalizeVocabularySearchText(query), [query]);
 
   useEffect(() => {
     // One-time client-only read of localStorage after hydration.
@@ -146,9 +188,22 @@ export default function VocabularyPage() {
   const progress = state.progress;
   const visibleCards = vocabData.filter((vocab) => {
     const matchesCategory = categoryFilter === "all" || vocab.categoryId === categoryFilter;
+    if (!matchesCategory) return false;
+
     const matchesRegister =
       registerFilter === "all" || hasRegisterExample(vocab, registerFilter);
-    return matchesCategory && matchesRegister;
+    if (!matchesRegister) return false;
+
+    // Collection protection: with no search active, hidden cards still render as `???`
+    // (unchanged). Once a search is active, an uncollected/locked card is excluded outright
+    // — and, because it was never added to `searchHaystacks` above, its hidden
+    // kanji/kana/romaji/German was never even read to build the index. This explicit check
+    // is belt-and-suspenders: even the empty-haystack fallback below would exclude it.
+    if (normalizedQuery === "") return true;
+    if (isHiddenStatus(getCardStatus(vocab, progress))) return false;
+
+    const haystack = searchHaystacks.get(vocab.id) ?? "";
+    return matchesNormalizedHaystack(haystack, normalizedQuery);
   });
 
   return (
@@ -200,7 +255,40 @@ export default function VocabularyPage() {
           </Card>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div>
+          <label
+            htmlFor="vocab-search"
+            className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase"
+          >
+            Wortkarten durchsuchen
+          </label>
+          <div className="relative mt-2 max-w-md">
+            <SearchIcon className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-soft)]" />
+            <input
+              id="vocab-search"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Japanisch, Kana, Romaji oder Deutsch"
+              className="w-full rounded-xl border-2 border-[var(--color-secondary-border)] bg-white py-2.5 pr-11 pl-10 text-sm text-[var(--color-ink)] focus:border-[var(--color-primary)] focus:outline-none"
+            />
+            {query ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Suche löschen"
+                className="tap-scale absolute top-1/2 right-0 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+              >
+                <ClearIcon className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
+            Kategorie
+          </span>
           {CATEGORY_FILTERS.map((filter) => (
             <Button
               key={filter.id}
@@ -216,7 +304,7 @@ export default function VocabularyPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-            Register
+            Sprachstil
           </span>
           {REGISTER_FILTERS.map((filter) => (
             <Button
@@ -231,9 +319,30 @@ export default function VocabularyPage() {
           ))}
         </div>
 
+        <p aria-live="polite" className="text-sm font-semibold text-[var(--color-ink-soft)]">
+          {formatResultCount(visibleCards.length)}
+        </p>
+
         {visibleCards.length === 0 ? (
           <Card variant="default" className="text-center">
             <p className="text-[var(--color-ink-soft)]">Keine passenden Wortkarten gefunden.</p>
+            {normalizedQuery ? (
+              <>
+                <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+                  Versuche einen anderen Suchbegriff oder ändere die Filter.
+                </p>
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="min-h-11"
+                    onClick={() => setQuery("")}
+                  >
+                    Suche löschen
+                  </Button>
+                </div>
+              </>
+            ) : null}
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -249,6 +358,43 @@ export default function VocabularyPage() {
         )}
       </div>
     </main>
+  );
+}
+
+/** Minimal inline search icon — no icon library dependency. */
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
+
+/** Minimal inline "clear" (X) icon — no icon library dependency. */
+function ClearIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
   );
 }
 
