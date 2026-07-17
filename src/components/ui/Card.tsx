@@ -31,9 +31,29 @@ export function Card({ children, variant = "default", className, onClick }: Card
     .filter(Boolean)
     .join(" ");
 
-  return (
-    <div className={classes} onClick={onClick}>
-      {children}
-    </div>
-  );
+  // A clickable card must be reachable and activatable without a mouse. It stays a <div>
+  // (rather than becoming a <button>) because cards carry block content and rely on the
+  // surrounding text alignment — swapping the element would change their rendering — so it
+  // takes the standard ARIA button pattern instead: role + tabIndex + Enter/Space. Space is
+  // preventDefault'd so activating a card never also scrolls the page.
+  if (onClick) {
+    return (
+      <div
+        className={classes}
+        onClick={onClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onClick();
+          }
+        }}
+      >
+        {children}
+      </div>
+    );
+  }
+
+  return <div className={classes}>{children}</div>;
 }

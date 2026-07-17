@@ -461,12 +461,14 @@ function VocabCard({ vocab, status, onPractice }: VocabCardProps) {
           ) : null}
         </div>
         {!isHidden ? (
+          // 44x44 hit area (was 36); the speaker glyph stays h-4/w-4, so only the
+          // tappable circle grows, not the icon.
           <button
             type="button"
             onClick={() => speakJapanese(vocab.kanji)}
             aria-label="Aussprache hören"
             title="Aussprache hören"
-            className="tap-scale shrink-0 rounded-full border-2 border-[var(--color-secondary-border)] bg-white p-2 text-[var(--color-primary-dark)] hover:border-[var(--color-primary)]"
+            className="tap-scale flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[var(--color-secondary-border)] bg-white text-[var(--color-primary-dark)] hover:border-[var(--color-primary)]"
           >
             <SpeakerIcon className="h-4 w-4" />
           </button>

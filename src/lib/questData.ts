@@ -702,6 +702,12 @@ export const questCategories: QuestCategory[] = [
         ],
         answer: "Freund → Satz A, Lehrkraft → Satz B",
         vocabId: "friend",
+        // This answer is a German mapping label, not a Japanese sentence, so it has no
+        // reading of its own. Empty (not omitted) on purpose: `getFeedbackPayload` only
+        // falls back to `vocab.kana` when `answerKana` is undefined, which would print
+        // 友だち's reading „ともだち“ under an answer that contains no Japanese at all.
+        // The two sentences and their kana are shown in the Beispiel block below instead.
+        answerKana: "",
         answerGerman: "Morgen gehe ich zur Schule.",
         exampleJapanese: "明日は学校に行く。明日は学校に行きます。",
         exampleKana: "あしたはがっこうにいく。あしたはがっこうにいきます。",

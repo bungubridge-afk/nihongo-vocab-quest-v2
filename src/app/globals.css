@@ -640,8 +640,10 @@ body {
   }
 }
 
-/* Keyboard focus stays clearly visible on all interactive elements. */
-:where(button, a, summary):focus-visible {
+/* Keyboard focus stays clearly visible on all interactive elements. `[role="button"]`
+   covers the clickable Card (a div carrying the ARIA button pattern), which would
+   otherwise be focusable but show no focus ring. */
+:where(button, a, summary, [role="button"]):focus-visible {
   outline: 3px solid var(--color-blue);
   outline-offset: 2px;
 }

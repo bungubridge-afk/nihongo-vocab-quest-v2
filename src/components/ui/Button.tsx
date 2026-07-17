@@ -26,8 +26,14 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
     "bg-[var(--color-locked-bg)] text-[var(--color-locked)] border border-[var(--color-secondary-border)]",
 };
 
+/**
+ * `min-h-11` (44px) guarantees a comfortable touch target without inflating the type
+ * scale: the label keeps its own `text-*` size and the extra height is absorbed by the
+ * flex centering, so `sm` still *looks* small while staying thumb-friendly on mobile.
+ * `md`/`lg` already exceed 44px through their padding alone.
+ */
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-sm rounded-xl",
+  sm: "min-h-11 px-3 py-1.5 text-sm rounded-xl",
   md: "px-5 py-2.5 text-base rounded-2xl",
   lg: "px-7 py-3.5 text-lg rounded-2xl",
 };

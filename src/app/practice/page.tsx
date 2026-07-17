@@ -475,7 +475,7 @@ function SpeakingChallenge({ question, onSuccess, onSkip }: SpeakingChallengePro
           onClick={() => speakJapanese(question.speechText ?? "")}
           aria-label="Aussprache anhören"
           title="Aussprache anhören"
-          className="tap-scale flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary-dark)] transition-colors hover:bg-[var(--color-primary)] hover:text-white"
+          className="tap-scale flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary-dark)] transition-colors hover:bg-[var(--color-primary)] hover:text-white"
         >
           <svg
             viewBox="0 0 24 24"

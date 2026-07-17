@@ -91,7 +91,7 @@ export function FeedbackPanel({
           <button
             type="button"
             onClick={() => setShowDetail((prev) => !prev)}
-            className="text-sm font-semibold text-[var(--color-primary-dark)] underline underline-offset-2"
+            className="inline-flex min-h-11 items-center text-sm font-semibold text-[var(--color-primary-dark)] underline underline-offset-2"
           >
             {showDetail ? "Weniger anzeigen" : "Mehr anzeigen"}
           </button>

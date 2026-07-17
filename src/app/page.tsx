@@ -342,7 +342,7 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
         </div>
 
         <details className="mb-6 max-w-xl text-sm text-[var(--color-ink-soft)]">
-          <summary className="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-1 py-0.5 font-semibold text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full px-1 py-0.5 font-semibold text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">
             <span
               aria-hidden="true"
               className="flex h-4 w-4 items-center justify-center rounded-full border border-current text-[10px] font-bold"
