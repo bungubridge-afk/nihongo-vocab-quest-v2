@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge, Button, Card, FeedbackPanel } from "@/components/ui";
+import { SaveProgressHint } from "@/components/auth/SaveProgressHint";
 import { getQuestCategory } from "@/lib/questData";
 import { buildLessonQuestions, getFeedbackPayload } from "@/lib/quizBuilder";
 import {
@@ -542,6 +543,8 @@ function ResultView({
             Zurück zur Karte
           </Button>
         </div>
+
+        <SaveProgressHint />
       </Card>
     </main>
   );

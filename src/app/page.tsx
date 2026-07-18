@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Badge, Button, Card, ProgressPill, QuestMap, QuestStageDetails } from "@/components/ui";
 import type { QuestMapStage, QuestNodeStatus } from "@/components/ui";
 import {
+  clearProfile,
   getCollectedCards,
   getCompletedCategories,
   getLevel,
@@ -18,8 +19,6 @@ import { getEtappeDisplayName, getLevelProgress, getNextCategory } from "@/lib/l
 import { getQuestCategory } from "@/lib/questData";
 import { currentWorld, nextAreaPreviews, stageMapMeta } from "@/lib/worldMapData";
 import type { CategoryId, OnboardingProfile } from "@/types/learning";
-
-const PROFILE_STORAGE_KEY = "nvq_profile";
 
 const CATEGORY_ORDER: CategoryId[] = ["cafe", "reise", "schule", "freunde", "review"];
 
@@ -180,7 +179,7 @@ export default function Home() {
   }
 
   function handleAdjustPlan() {
-    window.localStorage.removeItem(PROFILE_STORAGE_KEY);
+    clearProfile();
     setAppState((previous) => ({ ...previous, profile: null }));
     setStep(0);
     setAnswers({});

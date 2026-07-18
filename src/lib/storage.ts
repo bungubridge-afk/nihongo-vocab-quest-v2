@@ -1,64 +1,48 @@
 import type { CategoryId, OnboardingProfile, QuestCategory } from "@/types/learning";
 import {
   calculateLevelFromXp,
-  getInitialUnlockedCategories,
   getUnlockedCategoriesFromCompleted,
 } from "@/lib/levelSystem";
+import {
+  getActiveProgress,
+  updateActiveProgress,
+} from "@/lib/progress/progressStore";
+import { createInitialProgress } from "@/lib/progress/progressTypes";
 
-const STORAGE_KEYS = {
-  profile: "nvq_profile",
-  xp: "nvq_xp",
-  collectedCards: "nvq_collected_cards",
-  completedCategories: "nvq_completed_categories",
-  unlockedCategories: "nvq_unlocked_categories",
-  knownWords: "nvq_known_words",
-  weakWords: "nvq_weak_words",
-} as const;
-
-function isBrowser(): boolean {
-  return typeof window !== "undefined";
-}
-
-function readJSON<T>(key: string, fallback: T): T {
-  if (!isBrowser()) return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (raw === null) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJSON<T>(key: string, value: T): void {
-  if (!isBrowser()) return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // localStorage may be unavailable (private mode, quota exceeded) — fail silently.
-  }
-}
+/**
+ * Progress facade used by every page. The function signatures are unchanged from the
+ * original localStorage implementation — pages neither know nor care whether the data
+ * behind them is the anonymous localStorage progress or the signed-in user's synced
+ * cache. All reads/writes go through the active backend in
+ * `src/lib/progress/progressStore.ts`.
+ */
 
 export function getProfile(): OnboardingProfile | null {
-  return readJSON<OnboardingProfile | null>(STORAGE_KEYS.profile, null);
+  return getActiveProgress().profile;
 }
 
 export function saveProfile(profile: OnboardingProfile): void {
-  writeJSON(STORAGE_KEYS.profile, profile);
+  updateActiveProgress((current) => ({ ...current, profile }));
+}
+
+/** Replaces the previous direct `localStorage.removeItem("nvq_profile")` call. */
+export function clearProfile(): void {
+  updateActiveProgress((current) => ({ ...current, profile: null }));
 }
 
 export function getXP(): number {
-  return readJSON<number>(STORAGE_KEYS.xp, 0);
+  return getActiveProgress().xp;
 }
 
 export function setXP(xp: number): void {
-  writeJSON(STORAGE_KEYS.xp, xp);
+  updateActiveProgress((current) => ({ ...current, xp }));
 }
 
 export function addXP(amount: number): number {
-  const next = getXP() + amount;
-  setXP(next);
-  return next;
+  return updateActiveProgress((current) => ({
+    ...current,
+    xp: current.xp + amount,
+  })).xp;
 }
 
 export function getLevel(): number {
@@ -66,53 +50,47 @@ export function getLevel(): number {
 }
 
 export function getCollectedCards(): string[] {
-  return readJSON<string[]>(STORAGE_KEYS.collectedCards, []);
+  return getActiveProgress().collectedCardIds;
 }
 
 export function setCollectedCards(ids: string[]): void {
-  writeJSON(STORAGE_KEYS.collectedCards, ids);
+  updateActiveProgress((current) => ({ ...current, collectedCardIds: ids }));
 }
 
 export function getCompletedCategories(): CategoryId[] {
-  return readJSON<CategoryId[]>(STORAGE_KEYS.completedCategories, []);
+  return getActiveProgress().completedCategories;
 }
 
 export function setCompletedCategories(ids: CategoryId[]): void {
-  writeJSON(STORAGE_KEYS.completedCategories, ids);
+  updateActiveProgress((current) => ({ ...current, completedCategories: ids }));
 }
 
 export function getUnlockedCategories(): CategoryId[] {
-  return readJSON<CategoryId[]>(
-    STORAGE_KEYS.unlockedCategories,
-    getInitialUnlockedCategories()
-  );
+  return getActiveProgress().unlockedCategories;
 }
 
 export function setUnlockedCategories(ids: CategoryId[]): void {
-  writeJSON(STORAGE_KEYS.unlockedCategories, ids);
+  updateActiveProgress((current) => ({ ...current, unlockedCategories: ids }));
 }
 
 export function getKnownWords(): string[] {
-  return readJSON<string[]>(STORAGE_KEYS.knownWords, []);
+  return getActiveProgress().knownWords;
 }
 
 export function setKnownWords(ids: string[]): void {
-  writeJSON(STORAGE_KEYS.knownWords, ids);
+  updateActiveProgress((current) => ({ ...current, knownWords: ids }));
 }
 
 export function getWeakWords(): string[] {
-  return readJSON<string[]>(STORAGE_KEYS.weakWords, []);
+  return getActiveProgress().weakWords;
 }
 
 export function setWeakWords(ids: string[]): void {
-  writeJSON(STORAGE_KEYS.weakWords, ids);
+  updateActiveProgress((current) => ({ ...current, weakWords: ids }));
 }
 
 export function resetProgress(): void {
-  if (!isBrowser()) return;
-  Object.values(STORAGE_KEYS).forEach((key) => {
-    window.localStorage.removeItem(key);
-  });
+  updateActiveProgress(() => createInitialProgress());
 }
 
 export interface CategoryCompletionResult {
