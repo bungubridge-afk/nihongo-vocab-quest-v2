@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 
 export interface FeedbackPanelProps {
@@ -33,6 +33,32 @@ export function FeedbackPanel({
   nextLabel = "Weiter",
 }: FeedbackPanelProps) {
   const [showDetail, setShowDetail] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  // This panel only mounts after the learner answers. On short/typical phones the question
+  // card plus its four choices already fill the viewport, so the freshly-rendered feedback
+  // (the "Richtig!/Leider falsch" confirmation and the "Weiter" button) can appear entirely
+  // below the fold — leaving no visible sign the answer registered. Bring the panel into
+  // view when, and only when, it isn't already fully visible. Guarded so tall viewports
+  // (where it's already on screen) never move, and reduced-motion users get an instant jump.
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    const raf = requestAnimationFrame(() => {
+      const rect = el.getBoundingClientRect();
+      const fullyVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
+      if (fullyVisible) return;
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+      el.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "nearest",
+        inline: "nearest",
+      });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   const readingLine = [kana, romaji, german].filter(Boolean).join(" · ");
   const hasExample = Boolean(exampleJapanese || exampleKana || exampleGerman);
@@ -45,7 +71,7 @@ export function FeedbackPanel({
   ].join(" ");
 
   return (
-    <div className={panelClasses}>
+    <div ref={panelRef} className={panelClasses}>
       <p
         className={
           isCorrect
