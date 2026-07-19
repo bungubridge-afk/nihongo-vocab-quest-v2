@@ -695,12 +695,101 @@ body {
   animation: pop-in 0.18s ease-out;
 }
 
+/* ===== Kotoba-Zukan (Vocabulary collection) ===== */
+
+/* Discovered card: a faint diagonal sheen — static, no animation, so it reads as
+   "collected card stock" rather than an attention-grabbing effect. */
+.zukan-card-discovered {
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0) 55%,
+    rgba(47, 158, 92, 0.06) 78%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* Undiscovered card silhouette: muted card stock with a subtle dashed inner frame,
+   like an empty slot in a collector's binder. */
+.zukan-card-hidden {
+  position: relative;
+}
+
+.zukan-card-hidden::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 2px dashed color-mix(in srgb, var(--color-locked) 35%, transparent);
+  border-radius: 14px;
+  pointer-events: none;
+}
+
+/* The large "?" glyph area on a hidden card. */
+.zukan-silhouette {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-locked) 12%, transparent);
+  color: var(--color-locked);
+}
+
+/* Detail dialog (native <dialog>). Centered, capped to the viewport, inner scroll. */
+.zukan-dialog {
+  margin: auto;
+  width: min(100% - 2rem, 34rem);
+  max-height: min(100dvh - 2rem, 44rem);
+  border: 1px solid var(--color-secondary-border);
+  border-radius: 24px;
+  padding: 0;
+  background: var(--color-secondary);
+  color: var(--color-ink);
+  box-shadow: 0 24px 60px -24px var(--color-card-shadow);
+  overflow: hidden;
+}
+
+.zukan-dialog[open] {
+  animation: pop-in 0.18s ease-out;
+}
+
+.zukan-dialog::backdrop {
+  background: rgba(27, 35, 64, 0.45);
+}
+
+/* All dialog content scrolls inside this element, never the page behind it. */
+.zukan-dialog-body {
+  max-height: inherit;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.25rem;
+}
+
+/* Category-complete stamp: a slightly rotated inked seal, static. */
+.zukan-complete-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transform: rotate(-3deg);
+  border: 2px solid var(--color-gold);
+  color: var(--color-gold);
+  background: var(--color-gold-soft);
+  border-radius: 10px;
+  padding: 0.1rem 0.5rem;
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* Respect reduced-motion: keep states visible, drop the movement. */
 @media (prefers-reduced-motion: reduce) {
   .quest-node-pulse,
   .levelup-pop,
   .unlock-shine,
   .animate-pop-in {
+    animation: none;
+  }
+
+  .zukan-dialog[open] {
     animation: none;
   }
 

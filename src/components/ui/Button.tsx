@@ -11,6 +11,8 @@ export interface ButtonProps {
   className?: string;
   onClick?: () => void;
   type?: "button" | "submit";
+  /** For toggle-style buttons (filter chips): exposes the pressed state to AT. */
+  ariaPressed?: boolean;
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
@@ -46,6 +48,7 @@ export function Button({
   className,
   onClick,
   type = "button",
+  ariaPressed,
 }: ButtonProps) {
   const isLocked = variant === "locked";
   const nonInteractive = disabled || isLocked;
@@ -61,7 +64,13 @@ export function Button({
     .join(" ");
 
   return (
-    <button type={type} disabled={nonInteractive} onClick={onClick} className={classes}>
+    <button
+      type={type}
+      disabled={nonInteractive}
+      onClick={onClick}
+      className={classes}
+      aria-pressed={ariaPressed}
+    >
       {children}
     </button>
   );
