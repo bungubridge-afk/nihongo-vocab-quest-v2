@@ -5,6 +5,29 @@
 
 **Final verdict: PASS** — Auth/Supabase無変更、回帰なし、build/lintクリーン、自動検証50/50。
 
+---
+
+## 追記(2026-07-19): Home統合+階層グループ表示
+
+Home図鑑入口の統合(旧「Wortkarten-Sammlung」白ボタン+「Karten」ピル → 単一`ZukanEntryCard`)、Area 1スコープのヘッダー、章ベースのカテゴリパネル(「Café komplett」全廃、「Kapitel abgeschlossen」+「Weitere Kapitel folgen.」)、章セクションによるグループ表示(検索中はフラット、0件章スキップ)、カードの階層文脈「Café · Kapitel 1」を実装。全QA結果(320〜1280px実測、hidden privacy、dialog、回帰、build/lint 0/0)は [HOME_ZUKAN_INTEGRATION_QA.md](HOME_ZUKAN_INTEGRATION_QA.md) を参照。
+
+---
+
+## 追記(2026-07-19): 階層コレクション構造化
+
+Kotoba-Zukanを Area → Kategorie → Kapitel → Entry の階層へ変更(将来のArea 2 / 章追加に耐える構造)。詳細仕様は [VOCABULARY_COLLECTION_ARCHITECTURE.md](VOCABULARY_COLLECTION_ARCHITECTURE.md)。
+
+**変更ファイル**: `src/types/vocabularyCollection.ts`(Area/Chapter型・entry階層フィールド・View型追加)/ `src/lib/vocabularyCollectionData.ts`(areas/chapters + 章から導出する階層マージ + sort/progress純関数)/ `src/app/vocabulary/page.tsx`(sortを階層順へ、CategoryPanelを章ベース完了へ)。**globals.css・Button.tsx・zukanStatus.tsは無変更。**
+
+**主な変更**:
+- **collectionNumber**: 1〜26を安定図鑑番号として維持、sortキーから除外(sortは `sortCollectionEntries` = area→category→chapter→entryOrder)。Area 1では結果1〜26で表示順不変。
+- **category complete廃止**: 旧「Komplett」(カテゴリ永続完成)を廃し、全available章完了時のみ「Kapitel geschafft」。カテゴリViewに `isCompleted` を持たせない(`completedChapters`/`availableChapters` で表現)。`total` は今存在する語のみカウント。
+- **章割当**: area1-cafe-01(5) / area1-reise-01(11) / area1-schule-01(5) / area1-freunde-01(5)。entryOrder = questData の `collectedCardIds` 順。
+
+**自動検証(一時ファイル、実行後削除): 42/42 PASS** — Area/Chapter ID一意、全26語にareaId/chapterId/entryOrder、chapter.entryIdsとentry階層の整合、entry重複/欠落なし、entryOrder章内一意、collectionNumber 1〜26維持・一意・アンカー固定(coffee#1/station#6/like#26)、sort期待順(入力順非依存)、chapter/area progress、category `isCompleted`不在、area未完/完了判定、total=26固定、hidden getter非アクセス。
+
+**build/lint**: 0エラー・0警告(.env.local設定済み)。**ブラウザ回帰(実測)**: total「5/26」、Caféパネル「5/5 → Kapitel geschafft」(旧Komplett消滅)、カード#001〜#005正順、検索「eki」0件+DOM漏れなし、dialog(showModal/Zukan-Notiz/Karte üben)正常、Home/XP/Header正常、コンソールエラー0、横スクロールなし。**Auth/Supabase/SQL/progress系は無変更**(git status証跡: 変更3ファイルのみ)。
+
 ## Files created
 
 - `src/types/vocabularyCollection.ts` — 図鑑メタデータ型 + ZukanStatus

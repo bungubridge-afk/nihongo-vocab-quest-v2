@@ -697,6 +697,32 @@ body {
 
 /* ===== Kotoba-Zukan (Vocabulary collection) ===== */
 
+/* Home entry card into the Zukan — an app-own blue/teal gradient (never the plain
+   white secondary-button look), with a faint oversized book mark as decoration.
+   Static — no animation, so it doesn't compete with the quest map. */
+.zukan-entry-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-teal) 55%, var(--color-blue) 45%);
+  background: linear-gradient(120deg, var(--color-blue) 0%, #2a7fae 55%, var(--color-teal) 100%);
+  box-shadow: 0 10px 24px -14px var(--color-card-shadow);
+  cursor: pointer;
+}
+
+.zukan-entry-card::after {
+  content: "";
+  position: absolute;
+  right: -18px;
+  bottom: -26px;
+  width: 110px;
+  height: 110px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 6.5C10.5 5 8 4.5 4.5 4.8V18c3.5-.3 6 .2 7.5 1.7 1.5-1.5 4-2 7.5-1.7V4.8C16 4.5 13.5 5 12 6.5Z'/%3E%3Cpath d='M12 6.5V19.7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.14;
+  pointer-events: none;
+}
+
 /* Discovered card: a faint diagonal sheen — static, no animation, so it reads as
    "collected card stock" rather than an attention-grabbing effect. */
 .zukan-card-discovered {

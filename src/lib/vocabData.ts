@@ -67,9 +67,9 @@ export const vocabData: VocabItem[] = [
     commonExamples: ["パンをください。", "パンを食べます。", "パンが好きです。"],
     commonPatterns: ["〜をください", "〜を食べます"],
     relatedExpressions: ["朝ごはん", "パンください", "パンを食べる"],
-    shortTip: "„パン“ klingt fast wie das deutsche Wort – und bedeutet genau dasselbe.",
+    shortTip: "„パン“ ist ein kurzes Lehnwort aus dem Portugiesischen – leicht zu merken.",
     detailTip:
-      "„パン“ kommt ursprünglich aus dem Portugiesischen und wird ähnlich wie im Deutschen ausgesprochen, daher leicht zu merken. „パンをください“ bestellt Brot, „パンを食べます“ beschreibt nur, dass du Brot isst. Das „を“ zeigt jeweils, worum es geht. Achte auf den Unterschied: Bestellung vs. Handlung.",
+      "„パン“ kommt ursprünglich aus dem Portugiesischen („pão“) und ist als kurzes Lehnwort leicht zu merken. „パンをください“ bestellt Brot, „パンを食べます“ beschreibt nur, dass du Brot isst. Das „を“ zeigt jeweils, worum es geht. Achte auf den Unterschied: Bestellung vs. Handlung.",
     relatedVocabIds: ["eat", "coffee", "water"],
   },
   {

@@ -308,7 +308,7 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
   return (
     <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-6xl">
-        <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-wrap gap-3">
             <ProgressPill
               label="Level"
@@ -318,19 +318,8 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
               subLabel={`Noch ${levelProgress.xpRemaining} XP bis Level ${levelProgress.nextLevel}`}
             />
             <ProgressPill label="XP gesamt" value={xp} variant="xp" />
-            <ProgressPill
-              label="Karten"
-              value={collectedCards.length}
-              variant="cards"
-              subLabel="Zur Sammlung"
-              onClick={() => router.push("/vocabulary")}
-              ariaLabel="Wortkarten-Sammlung öffnen"
-            />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={() => router.push("/vocabulary")}>
-              Wortkarten-Sammlung
-            </Button>
             <Button variant="secondary" size="sm" onClick={() => router.push("/review")}>
               Wiederholung
             </Button>
@@ -339,6 +328,13 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
             </Button>
           </div>
         </div>
+
+        {/* Single Zukan entry point — replaces both the old "Karten" stat pill and the
+            plain white "Wortkarten-Sammlung" button (one door, no duplicates). */}
+        <ZukanEntryCard
+          discoveredCount={collectedCards.length}
+          onOpen={() => router.push("/vocabulary")}
+        />
 
         <details className="mb-6 max-w-xl text-sm text-[var(--color-ink-soft)]">
           <summary className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full px-1 py-0.5 font-semibold text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">
@@ -470,6 +466,73 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
         </div>
       </div>
     </main>
+  );
+}
+
+/**
+ * The single entry point from Home into the Kotoba-Zukan. One tappable card (no nested
+ * buttons): icon, discovered-word count and a CTA chip that is styled, not a separate
+ * control. Deliberately quieter than the quest map — a supporting reward showcase, not
+ * the main path. The count shows only what was discovered; no fixed grand total, since
+ * the collection grows with future chapters.
+ */
+function ZukanEntryCard({
+  discoveredCount,
+  onOpen,
+}: {
+  discoveredCount: number;
+  onOpen: () => void;
+}) {
+  const countLabel =
+    discoveredCount === 1 ? "1 Wort entdeckt" : `${discoveredCount} Wörter entdeckt`;
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="zukan-entry-card tap-scale mb-6 flex w-full max-w-xl flex-wrap items-center gap-3 rounded-2xl px-4 py-3 text-left sm:flex-nowrap sm:gap-4 sm:px-5"
+    >
+      <span
+        aria-hidden="true"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20"
+      >
+        <ZukanBookIcon className="h-6 w-6 text-white" />
+      </span>
+      <span className="min-w-0 flex-1 basis-0">
+        <span className="block text-[11px] font-bold tracking-wider text-white/85 uppercase">
+          Dein Kotoba-Zukan
+        </span>
+        <span className="block text-lg font-extrabold text-white">{countLabel}</span>
+        <span className="block text-xs text-white/85">
+          Neue japanische Wörter aus deinen Quests.
+        </span>
+      </span>
+      {/* On very narrow screens the chip wraps onto its own full-width row instead of
+          squeezing the text into a tall multi-line column. */}
+      <span className="flex min-h-11 w-full items-center justify-center rounded-full bg-white/20 px-3 py-2 text-sm font-bold whitespace-nowrap text-white sm:w-auto sm:shrink-0">
+        Zukan öffnen
+      </span>
+    </button>
+  );
+}
+
+/** Small open-book mark for the Zukan entry card. Original inline SVG, decorative. */
+function ZukanBookIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 6.5C10.5 5 8 4.5 4.5 4.8V18c3.5-.3 6 .2 7.5 1.7 1.5-1.5 4-2 7.5-1.7V4.8C16 4.5 13.5 5 12 6.5Z" />
+      <path d="M12 6.5V19.7" />
+      <path d="M8 9.5c.9 0 1.7.1 2.4.3M8 12.5c.9 0 1.7.1 2.4.3" />
+    </svg>
   );
 }
 

@@ -7,9 +7,16 @@ import { vocabData } from "@/lib/vocabData";
 import { speakJapanese } from "@/lib/speech";
 import { getRegisterLabel } from "@/lib/registerData";
 import {
+  buildCategoryCollectionView,
   formatCollectionNumber,
+  getAreaProgress,
   getCategoryCollectionData,
+  getChapterById,
+  getChapterProgress,
+  getChaptersForArea,
   getCollectionEntry,
+  sortCollectionEntries,
+  vocabularyCollectionAreas,
   vocabularyCategoryCollection,
 } from "@/lib/vocabularyCollectionData";
 import {
@@ -19,6 +26,10 @@ import {
 } from "@/lib/vocabularySearch";
 import { getCardStatus, getZukanStatus, isHiddenStatus } from "@/lib/zukanStatus";
 import {
+  CULTURE_NOTE_TYPE_LABEL,
+  getCultureNote,
+} from "@/lib/vocabularyCultureData";
+import {
   getCollectedCards,
   getCompletedCategories,
   getKnownWords,
@@ -27,7 +38,10 @@ import {
 } from "@/lib/storage";
 import type { CardStatus, CategoryId, SpeechRegister, VocabItem } from "@/types/learning";
 import type {
+  CategoryCollectionView,
+  ChapterProgressView,
   VocabularyCategoryCollectionData,
+  VocabularyCollectionChapter,
   VocabularyCollectionEntry,
   ZukanStatus,
 } from "@/types/vocabularyCollection";
@@ -157,25 +171,36 @@ export default function VocabularyPage() {
   const statusById = new Map<string, CardStatus>(
     vocabData.map((vocab) => [vocab.id, getCardStatus(vocab, progress)])
   );
-  const discoveredCount = vocabData.filter(
-    (vocab) => !isHiddenStatus(statusById.get(vocab.id) ?? "locked")
-  ).length;
-  const totalCount = vocabData.length;
-  const discoveredPercent =
-    totalCount > 0 ? Math.round((discoveredCount / totalCount) * 100) : 0;
+  // `getCardStatus` reads only id/categoryId, so this predicate never touches a hidden
+  // card's protected text fields — the hierarchy progress helpers rely on that.
+  const isDiscovered = (vocabId: string): boolean =>
+    !isHiddenStatus(statusById.get(vocabId) ?? "locked");
 
-  const categoryCounts = new Map<CategoryId, { discovered: number; total: number }>();
+  // Area-scoped progress (Phase 3): the header talks about "Area 1", never about a
+  // percentage of the whole future Zukan — the collection keeps growing, so a global
+  // "X % complete" would be misleading. Totals count only entries that exist today.
+  const area = vocabularyCollectionAreas[0];
+  const areaProgress = getAreaProgress(area.id, isDiscovered);
+  const areaPercent =
+    areaProgress.totalWords > 0
+      ? Math.round((areaProgress.discoveredWords / areaProgress.totalWords) * 100)
+      : 0;
+
+  // Per-category collection view (chapter-based). No category-wide "complete" flag —
+  // completion is decided per chapter, so a category can always gain new chapters.
+  const categoryViews = new Map<CategoryId, CategoryCollectionView>();
   for (const categoryId of VOCAB_CATEGORY_ORDER) {
-    categoryCounts.set(categoryId, { discovered: 0, total: 0 });
+    categoryViews.set(categoryId, buildCategoryCollectionView(categoryId, isDiscovered));
   }
-  for (const vocab of vocabData) {
-    const counts = categoryCounts.get(vocab.categoryId);
-    if (!counts) continue;
-    counts.total += 1;
-    if (!isHiddenStatus(statusById.get(vocab.id) ?? "locked")) {
-      counts.discovered += 1;
-    }
-  }
+
+  // Display order = area.order → category order → chapter.order → entryOrder, via the
+  // canonical hierarchy sort. Precompute one rank per id, then order the visible cards.
+  const orderRank = new Map<string, number>(
+    sortCollectionEntries(vocabData.map((vocab) => vocab.id)).map((id, index) => [
+      id,
+      index,
+    ])
+  );
 
   const visibleCards = vocabData
     .filter((vocab) => {
@@ -199,9 +224,32 @@ export default function VocabularyPage() {
     })
     .sort(
       (a, b) =>
-        (getCollectionEntry(a.id)?.collectionNumber ?? 999) -
-        (getCollectionEntry(b.id)?.collectionNumber ?? 999)
+        (orderRank.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (orderRank.get(b.id) ?? Number.MAX_SAFE_INTEGER)
     );
+
+  // Grouped display (Phase 5): without an active search, cards render in chapter
+  // sections following the hierarchy Area 1 → Kategorie → Kapitel → Eintrag. During a
+  // search the results stay one flat, simplified list. Chapters whose cards are all
+  // filtered out (category/register filter) are skipped entirely. The section's
+  // "discovered / total" is the chapter's real progress, independent of filters.
+  interface ChapterSection {
+    chapter: VocabularyCollectionChapter;
+    progressView: ChapterProgressView;
+    cards: VocabItem[];
+  }
+  const chapterSections: ChapterSection[] =
+    normalizedQuery === ""
+      ? getChaptersForArea(area.id)
+          .map((chapter) => ({
+            chapter,
+            progressView: getChapterProgress(chapter, isDiscovered),
+            cards: visibleCards.filter(
+              (vocab) => getCollectionEntry(vocab.id)?.chapterId === chapter.id
+            ),
+          }))
+          .filter((section) => section.cards.length > 0)
+      : [];
 
   const selectedVocab =
     selectedVocabId !== null
@@ -214,6 +262,22 @@ export default function VocabularyPage() {
   function openEntry(vocabId: string, trigger: HTMLButtonElement | null) {
     dialogTriggerRef.current = trigger;
     setSelectedVocabId(vocabId);
+  }
+
+  // One card renderer for both the grouped sections and the flat search results.
+  function renderZukanCard(vocab: VocabItem) {
+    const status = statusById.get(vocab.id) ?? "locked";
+    return isHiddenStatus(status) ? (
+      <ZukanHiddenCard key={vocab.id} vocab={vocab} />
+    ) : (
+      <ZukanCard
+        key={vocab.id}
+        vocab={vocab}
+        zukanStatus={getZukanStatus(status)}
+        entry={getCollectionEntry(vocab.id)}
+        onOpen={(trigger) => openEntry(vocab.id, trigger)}
+      />
+    );
   }
 
   function closeEntry() {
@@ -248,23 +312,27 @@ export default function VocabularyPage() {
           </p>
         </div>
 
-        {/* 3: total collection progress */}
+        {/* 3: area-scoped collection progress — no "whole Zukan complete" claims */}
         <Card variant="default">
-          <p className="text-lg font-extrabold text-[var(--color-ink)] sm:text-xl">
-            {discoveredCount} / {totalCount} Wörter entdeckt
+          <p className="text-xs font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
+            Area 1 · {area.titleGerman}
+          </p>
+          <p className="mt-1 text-lg font-extrabold text-[var(--color-ink)] sm:text-xl">
+            {areaProgress.discoveredWords} / {areaProgress.totalWords} Einträge in Area 1
+            entdeckt
           </p>
           <div
             className="xp-bar-track mt-2"
             role="progressbar"
             aria-valuemin={0}
-            aria-valuemax={totalCount}
-            aria-valuenow={discoveredCount}
-            aria-label={`Zukan-Fortschritt: ${discoveredCount} von ${totalCount} Wörtern entdeckt`}
+            aria-valuemax={areaProgress.totalWords}
+            aria-valuenow={areaProgress.discoveredWords}
+            aria-label={`Area 1: ${areaProgress.discoveredWords} von ${areaProgress.totalWords} Einträgen entdeckt`}
           >
-            <div className="xp-bar-fill" style={{ width: `${discoveredPercent}%` }} />
+            <div className="xp-bar-fill" style={{ width: `${areaPercent}%` }} />
           </div>
-          <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink-soft)]">
-            {discoveredPercent} % des Zukans vollständig
+          <p className="mt-1.5 text-sm text-[var(--color-ink-soft)]">
+            Deine Sammlung wächst mit jeder Etappe.
           </p>
         </Card>
 
@@ -276,18 +344,16 @@ export default function VocabularyPage() {
           >
             Kategorien
           </h2>
-          <div className="mt-2 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="mt-2 grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-4">
             {vocabularyCategoryCollection.map((category) => {
-              const counts = categoryCounts.get(category.categoryId) ?? {
-                discovered: 0,
-                total: 0,
-              };
+              const view =
+                categoryViews.get(category.categoryId) ??
+                buildCategoryCollectionView(category.categoryId, () => false);
               return (
                 <CategoryPanel
                   key={category.categoryId}
                   category={category}
-                  discovered={counts.discovered}
-                  total={counts.total}
+                  view={view}
                   active={categoryFilter === category.categoryId}
                   onToggle={() =>
                     setCategoryFilter((current) =>
@@ -323,10 +389,14 @@ export default function VocabularyPage() {
             />
             <RuleStep
               number={4}
-              title="Zukan vervollständigen"
-              text="Entdecke alle Wörter einer Kategorie."
+              title="Kapitel abschließen"
+              text="Entdecke alle Wörter eines Kapitels."
             />
           </ol>
+          <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
+            Zu jeder Kategorie kommen später neue Kapitel dazu. „Kapitel abgeschlossen“
+            bedeutet also nicht, dass eine Kategorie für immer vollständig ist.
+          </p>
           <div className="mt-4 border-t border-[var(--color-secondary-border)] pt-3 pb-2">
             <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
               Was bedeuten die Status?
@@ -415,7 +485,7 @@ export default function VocabularyPage() {
           {formatResultCount(visibleCards.length)}
         </p>
 
-        {/* 7: the card grid */}
+        {/* 7: the entries — grouped by chapter, or one flat list while searching */}
         {visibleCards.length === 0 ? (
           <Card variant="default" className="text-center">
             <p className="text-[var(--color-ink-soft)]">Keine passenden Wortkarten gefunden.</p>
@@ -437,20 +507,47 @@ export default function VocabularyPage() {
               </>
             ) : null}
           </Card>
-        ) : (
+        ) : normalizedQuery !== "" ? (
           <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-            {visibleCards.map((vocab) => {
-              const status = statusById.get(vocab.id) ?? "locked";
-              return isHiddenStatus(status) ? (
-                <ZukanHiddenCard key={vocab.id} vocab={vocab} />
-              ) : (
-                <ZukanCard
-                  key={vocab.id}
-                  vocab={vocab}
-                  zukanStatus={getZukanStatus(status)}
-                  entry={getCollectionEntry(vocab.id)}
-                  onOpen={(trigger) => openEntry(vocab.id, trigger)}
-                />
+            {visibleCards.map((vocab) => renderZukanCard(vocab))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-7">
+            {chapterSections.map(({ chapter, progressView, cards }) => {
+              const sectionCategory = getCategoryCollectionData(chapter.categoryId);
+              const headingId = `chapter-heading-${chapter.id}`;
+              return (
+                <section key={chapter.id} aria-labelledby={headingId}>
+                  <div className="mb-3 border-l-4 border-[var(--color-primary-border)] pl-3">
+                    <p className="text-xs font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
+                      {sectionCategory?.titleGerman ?? chapter.categoryId} · Kapitel{" "}
+                      {chapter.order}
+                    </p>
+                    <h2
+                      id={headingId}
+                      className="text-lg font-extrabold text-[var(--color-ink)]"
+                    >
+                      {chapter.titleGerman}
+                    </h2>
+                    <p className="text-sm text-[var(--color-ink-soft)]">
+                      {chapter.subtitleGerman}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-[var(--color-ink)]">
+                        {progressView.discovered} / {progressView.total} entdeckt
+                      </span>
+                      {progressView.isCompleted ? (
+                        <span className="zukan-complete-stamp">
+                          <CheckIcon className="h-3 w-3" />
+                          Kapitel abgeschlossen
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                    {cards.map((vocab) => renderZukanCard(vocab))}
+                  </div>
+                </section>
               );
             })}
           </div>
@@ -476,16 +573,30 @@ export default function VocabularyPage() {
 
 interface CategoryPanelProps {
   category: VocabularyCategoryCollectionData;
-  discovered: number;
-  total: number;
+  view: CategoryCollectionView;
   active: boolean;
   onToggle: () => void;
 }
 
-function CategoryPanel({ category, discovered, total, active, onToggle }: CategoryPanelProps) {
-  const complete = total > 0 && discovered === total;
-  const remaining = total - discovered;
-  const percent = total > 0 ? Math.round((discovered / total) * 100) : 0;
+/**
+ * Category panel, chapter-based (Phase 4). Never claims a category is finished:
+ * - the discovered count has no denominator (a category's final size is open-ended),
+ * - there is NO category-wide progress bar — only the current chapter gets one,
+ * - "Kapitel abgeschlossen" refers to the shown chapter, and the fixed footer
+ *   "Weitere Kapitel folgen." says more is coming either way.
+ * The "current" chapter is the first unfinished one (or the last one if all are done).
+ */
+function CategoryPanel({ category, view, active, onToggle }: CategoryPanelProps) {
+  const { discoveredWords, availableChapters, chapters } = view;
+  const currentChapter =
+    chapters.find((chapter) => !chapter.isCompleted) ?? chapters[chapters.length - 1];
+  const chapterPercent =
+    currentChapter && currentChapter.total > 0
+      ? Math.round((currentChapter.discovered / currentChapter.total) * 100)
+      : 0;
+  const chapterNumber = currentChapter
+    ? getChapterById(currentChapter.chapterId)?.order ?? 1
+    : 1;
 
   return (
     <button
@@ -506,21 +617,36 @@ function CategoryPanel({ category, discovered, total, active, onToggle }: Catego
         </span>
       </span>
       <span className="text-sm font-semibold text-[var(--color-ink)]">
-        {discovered} / {total} entdeckt
+        {discoveredWords} {discoveredWords === 1 ? "Wort" : "Wörter"} entdeckt
       </span>
-      <span className="xp-bar-track" aria-hidden="true">
-        <span className="xp-bar-fill block" style={{ width: `${percent}%` }} />
+      {currentChapter ? (
+        <>
+          <span className="text-xs break-words text-[var(--color-ink-soft)]">
+            Kapitel {chapterNumber} von {availableChapters}: {currentChapter.titleGerman}
+          </span>
+          <span className="xp-bar-track" aria-hidden="true">
+            <span className="xp-bar-fill block" style={{ width: `${chapterPercent}%` }} />
+          </span>
+          {currentChapter.isCompleted ? (
+            <span className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-semibold text-[var(--color-ink)]">
+                {currentChapter.discovered} / {currentChapter.total} entdeckt
+              </span>
+              <span className="zukan-complete-stamp self-start">
+                <CheckIcon className="h-3 w-3" />
+                Kapitel abgeschlossen
+              </span>
+            </span>
+          ) : (
+            <span className="text-xs font-semibold text-[var(--color-ink)]">
+              {currentChapter.discovered} / {currentChapter.total} entdeckt
+            </span>
+          )}
+        </>
+      ) : null}
+      <span className="text-[11px] text-[var(--color-ink-soft)] italic">
+        Weitere Kapitel folgen.
       </span>
-      {complete ? (
-        <span className="zukan-complete-stamp mt-0.5 self-start">
-          <CheckIcon className="h-3 w-3" />
-          Komplett
-        </span>
-      ) : (
-        <span className="text-xs text-[var(--color-ink-soft)]">
-          Noch {remaining} {remaining === 1 ? "Wort" : "Wörter"}
-        </span>
-      )}
     </button>
   );
 }
@@ -746,6 +872,27 @@ function SpeakerIcon({ className }: { className?: string }) {
   );
 }
 
+/** Small paper-lantern mark for the Japan-Notiz section. Original inline SVG,
+ *  decorative only (the visible text label carries the meaning). */
+function LanternIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M10 3.5h4M10.5 20.5h3" />
+      <path d="M12 5.5c3.6 0 5.5 3 5.5 6.5s-1.9 6.5-5.5 6.5-5.5-3-5.5-6.5 1.9-6.5 5.5-6.5Z" />
+      <path d="M9 6.6c-.8 1.5-1.2 3.3-1.2 5.4s.4 3.9 1.2 5.4M15 6.6c.8 1.5 1.2 3.3 1.2 5.4s-.4 3.9-1.2 5.4" />
+    </svg>
+  );
+}
+
 function CloseIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -776,6 +923,9 @@ interface ZukanCardProps {
 
 function ZukanCard({ vocab, zukanStatus, entry, onOpen }: ZukanCardProps) {
   const category = getCategoryCollectionData(vocab.categoryId);
+  // Short hierarchy context next to the dex number ("Café · Kapitel 1") — the number
+  // alone is a stable id, not the thing that explains the order.
+  const chapter = entry ? getChapterById(entry.chapterId) : undefined;
   const hasUsageExamples = (vocab.usageExamples?.length ?? 0) > 0;
   const openButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -812,7 +962,10 @@ function ZukanCard({ vocab, zukanStatus, entry, onOpen }: ZukanCardProps) {
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-[var(--color-ink-soft)]">
-        <span>{category?.titleGerman ?? vocab.categoryId}</span>
+        <span>
+          {category?.titleGerman ?? vocab.categoryId}
+          {chapter ? ` · Kapitel ${chapter.order}` : ""}
+        </span>
         {hasUsageExamples ? (
           <span className="rounded-full bg-[var(--color-teal-soft)] px-2 py-0.5 font-bold text-[var(--color-teal)]">
             Locker &amp; Höflich
@@ -839,8 +992,12 @@ function ZukanCard({ vocab, zukanStatus, entry, onOpen }: ZukanCardProps) {
 // ---------------------------------------------------------------------------
 
 function ZukanHiddenCard({ vocab }: { vocab: VocabItem }) {
-  // Reads only categoryId — never kanji/kana/romaji/german or Zukan metadata.
+  // Reads only categoryId and the chapter position — never kanji/kana/romaji/german
+  // or the entry's German texts. Chapter membership is public structure (the section
+  // headers show it anyway), so no new information leaks here.
   const category = getCategoryCollectionData(vocab.categoryId);
+  const hiddenEntry = getCollectionEntry(vocab.id);
+  const chapter = hiddenEntry ? getChapterById(hiddenEntry.chapterId) : undefined;
 
   return (
     <Card variant="locked" className="zukan-card-hidden flex flex-col gap-2">
@@ -861,6 +1018,7 @@ function ZukanHiddenCard({ vocab }: { vocab: VocabItem }) {
       </p>
       <p className="mt-auto text-[11px] font-semibold text-[var(--color-ink-soft)]">
         {category?.titleGerman ?? vocab.categoryId}
+        {chapter ? ` · Kapitel ${chapter.order}` : ""}
       </p>
     </Card>
   );
@@ -887,6 +1045,9 @@ function ZukanDetailDialog({
 }: ZukanDetailDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const category = getCategoryCollectionData(vocab.categoryId);
+  // Culture data is looked up ONLY here — the dialog opens exclusively for
+  // discovered cards, so a hidden card's Japan-Notiz is never read or rendered.
+  const cultureNote = getCultureNote(vocab.id);
   const hasUsageExamples = (vocab.usageExamples?.length ?? 0) > 0;
   const titleId = "zukan-dialog-title";
   const descriptionId = "zukan-dialog-description";
@@ -989,6 +1150,18 @@ function ZukanDetailDialog({
             </h3>
             <p id={descriptionId} className="mt-1 text-sm text-[var(--color-ink)] italic">
               {entry.dexDescriptionGerman}
+            </p>
+          </section>
+        ) : null}
+
+        {cultureNote ? (
+          <section className="rounded-xl border border-[var(--color-teal-border)] bg-[var(--color-teal-soft)] px-3 py-2.5">
+            <h3 className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-[var(--color-teal)] uppercase">
+              <LanternIcon className="h-3.5 w-3.5 shrink-0" />
+              Japan-Notiz · {CULTURE_NOTE_TYPE_LABEL[cultureNote.type]}
+            </h3>
+            <p className="mt-1 text-sm break-words text-[var(--color-ink)]">
+              {cultureNote.japanNoteGerman}
             </p>
           </section>
         ) : null}

@@ -1,20 +1,37 @@
 import type { CategoryId } from "@/types/learning";
 import type {
+  AreaProgressView,
+  CategoryCollectionView,
+  ChapterProgressView,
+  CollectionAreaId,
   VocabularyCategoryCollectionData,
+  VocabularyCollectionArea,
+  VocabularyCollectionChapter,
   VocabularyCollectionEntry,
 } from "@/types/vocabularyCollection";
 
 /**
- * Zukan (collection lexicon) display metadata for every word in the app.
+ * Zukan (collection lexicon) display metadata for every word in the app, organised as
+ * Area → Kategorie → Kapitel → Entry (see docs/VOCABULARY_COLLECTION_ARCHITECTURE.md).
  *
  * Rules this file lives by:
  * - Display only. Never read for XP, quiz building, unlocks or the search index —
  *   and never shown for a card the player has not discovered yet.
- * - `collectionNumber` is 1–26, unique, ordered by the existing category order
- *   (Café → Reise → Schule → Freunde) and the data order inside `vocabData`.
+ * - `collectionNumber` is a STABLE 1–26 dex number, never reassigned when words are
+ *   added later, and never used as a sort key (sorting is by area/category/chapter/
+ *   entryOrder).
+ * - Chapter membership + order lives in `vocabularyCollectionChapters[].entryIds`, the
+ *   single source of truth; each entry's `areaId`/`chapterId`/`entryOrder` is derived
+ *   from it at module load, so the two can never drift apart.
  * - Texts are German, meaning-accurate, and must not contradict the word's own
  *   examples/tips in `vocabData.ts`. Tone: a friendly field guide — light, never silly.
  */
+
+/** The per-word content, before the hierarchy fields are merged in from the chapters. */
+type VocabularyCollectionEntryContent = Pick<
+  VocabularyCollectionEntry,
+  "collectionNumber" | "dexDescriptionGerman" | "usageRoleGerman" | "memoryHookGerman"
+>;
 
 /** Every word id that must have a Zukan entry — keeps the record exhaustively typed:
  *  a missing or misspelled key below is a TypeScript error, not a runtime surprise. */
@@ -46,9 +63,9 @@ export type VocabCollectionId =
   | "tomorrow"
   | "like";
 
-export const vocabularyCollectionEntries: Record<
+const vocabularyCollectionContent: Record<
   VocabCollectionId,
-  VocabularyCollectionEntry
+  VocabularyCollectionEntryContent
 > = {
   // --- Café (#001–#005) ---
   coffee: {
@@ -255,6 +272,117 @@ export const vocabularyCollectionEntries: Record<
   },
 };
 
+// ---------------------------------------------------------------------------
+// Hierarchy: Area → Chapter. Chapters are the single source of truth for which
+// entries belong where and in what order.
+// ---------------------------------------------------------------------------
+
+export const vocabularyCollectionAreas: VocabularyCollectionArea[] = [
+  {
+    id: "area1",
+    order: 1,
+    titleGerman: "Erste Schritte in Japan",
+    subtitleGerman: "Deine ersten Wörter für Café, Reise, Schule und Freunde.",
+  },
+];
+
+export const vocabularyCollectionChapters: VocabularyCollectionChapter[] = [
+  {
+    id: "area1-cafe-01",
+    areaId: "area1",
+    categoryId: "cafe",
+    order: 1,
+    titleGerman: "Erste Bestellung",
+    subtitleGerman: "Getränke, ein Snack und die sichere Bestellform.",
+    entryIds: ["coffee", "water", "bread", "drink", "eat"],
+  },
+  {
+    id: "area1-reise-01",
+    areaId: "area1",
+    categoryId: "reise",
+    order: 1,
+    titleGerman: "Orientierung unterwegs",
+    subtitleGerman: "Orte, Verkehrsmittel und nach dem Weg fragen.",
+    entryIds: [
+      "station",
+      "hotel",
+      "train",
+      "toilet",
+      "go",
+      "where",
+      "excuseMe",
+      "right",
+      "left",
+      "near",
+      "far",
+    ],
+  },
+  {
+    id: "area1-schule-01",
+    areaId: "area1",
+    categoryId: "schule",
+    order: 1,
+    titleGerman: "Lernen und Sprache",
+    subtitleGerman: "Schule, Lehrkraft und über das Lernen sprechen.",
+    entryIds: ["school", "teacher", "japaneseLanguage", "study", "today"],
+  },
+  {
+    id: "area1-freunde-01",
+    areaId: "area1",
+    categoryId: "freunde",
+    order: 1,
+    titleGerman: "Erste Gespräche",
+    subtitleGerman: "Freunde treffen, sprechen und Pläne machen.",
+    entryIds: ["friend", "meet", "talk", "tomorrow", "like"],
+  },
+];
+
+/** entry id → its hierarchy position, derived once from the chapters above. */
+const ENTRY_HIERARCHY: Record<
+  string,
+  { areaId: CollectionAreaId; chapterId: string; entryOrder: number }
+> = (() => {
+  const map: Record<
+    string,
+    { areaId: CollectionAreaId; chapterId: string; entryOrder: number }
+  > = {};
+  for (const chapter of vocabularyCollectionChapters) {
+    chapter.entryIds.forEach((entryId, index) => {
+      map[entryId] = {
+        areaId: chapter.areaId,
+        chapterId: chapter.id,
+        entryOrder: index + 1,
+      };
+    });
+  }
+  return map;
+})();
+
+/**
+ * The full entries, content + hierarchy merged. Built at module load; throws loudly if
+ * a word has no chapter (a data-consistency bug that must never ship), so downstream
+ * code can rely on every entry having complete hierarchy fields.
+ */
+export const vocabularyCollectionEntries: Record<
+  VocabCollectionId,
+  VocabularyCollectionEntry
+> = (() => {
+  const result = {} as Record<VocabCollectionId, VocabularyCollectionEntry>;
+  for (const [id, content] of Object.entries(vocabularyCollectionContent) as [
+    VocabCollectionId,
+    VocabularyCollectionEntryContent,
+  ][]) {
+    const hierarchy = ENTRY_HIERARCHY[id];
+    if (!hierarchy) {
+      throw new Error(
+        `vocabularyCollectionData: entry "${id}" is not assigned to any chapter`
+      );
+    }
+    result[id] = { ...content, ...hierarchy };
+  }
+  return result;
+})();
+
 export const vocabularyCategoryCollection: VocabularyCategoryCollectionData[] = [
   {
     categoryId: "cafe",
@@ -307,4 +435,161 @@ export function getCategoryCollectionData(
 /** "#001"-style Zukan number. */
 export function formatCollectionNumber(collectionNumber: number): string {
   return `#${String(collectionNumber).padStart(3, "0")}`;
+}
+
+// ---------------------------------------------------------------------------
+// Hierarchy queries + progress (pure). Progress-dependent functions take an
+// `isDiscovered` predicate so they never read localStorage or hidden text
+// fields themselves — the page derives discovery from `getCardStatus` (which
+// reads only id/categoryId) and passes it in.
+// ---------------------------------------------------------------------------
+
+/** Category display/sort order. Café → Reise → Schule → Freunde. */
+export const COLLECTION_CATEGORY_ORDER: CategoryId[] = [
+  "cafe",
+  "reise",
+  "schule",
+  "freunde",
+];
+
+function areaOrderOf(areaId: CollectionAreaId): number {
+  return vocabularyCollectionAreas.find((area) => area.id === areaId)?.order ?? 999;
+}
+
+function categoryOrderOf(categoryId: CategoryId): number {
+  const index = COLLECTION_CATEGORY_ORDER.indexOf(categoryId);
+  return index === -1 ? 999 : index;
+}
+
+export function getChapterById(
+  chapterId: string
+): VocabularyCollectionChapter | undefined {
+  return vocabularyCollectionChapters.find((chapter) => chapter.id === chapterId);
+}
+
+/** The vocab ids of a chapter, in intended learning order (empty for unknown ids). */
+export function getEntriesForChapter(chapterId: string): string[] {
+  return getChapterById(chapterId)?.entryIds ?? [];
+}
+
+/** Chapters of one category, sorted by their `order`. */
+export function getChaptersForCategory(
+  categoryId: CategoryId
+): VocabularyCollectionChapter[] {
+  return vocabularyCollectionChapters
+    .filter((chapter) => chapter.categoryId === categoryId)
+    .sort((a, b) => a.order - b.order);
+}
+
+/** Chapters of one area, sorted by category order then chapter order. */
+export function getChaptersForArea(
+  areaId: CollectionAreaId
+): VocabularyCollectionChapter[] {
+  return vocabularyCollectionChapters
+    .filter((chapter) => chapter.areaId === areaId)
+    .sort(
+      (a, b) =>
+        categoryOrderOf(a.categoryId) - categoryOrderOf(b.categoryId) ||
+        a.order - b.order
+    );
+}
+
+/**
+ * Sorts vocab ids into display order: area.order → category order → chapter.order →
+ * entryOrder. Ids without collection metadata are pushed to the end (stable), so this
+ * never throws on unexpected input. Pure — returns a new array.
+ */
+export function sortCollectionEntries(entryIds: readonly string[]): string[] {
+  const rank = (id: string): [number, number, number, number, number] => {
+    const entry = getCollectionEntry(id);
+    if (!entry) return [999, 999, 999, 999, 999];
+    const chapter = getChapterById(entry.chapterId);
+    return [
+      areaOrderOf(entry.areaId),
+      chapter ? categoryOrderOf(chapter.categoryId) : 999,
+      chapter ? chapter.order : 999,
+      entry.entryOrder,
+      entry.collectionNumber,
+    ];
+  };
+  return [...entryIds].sort((a, b) => {
+    const ra = rank(a);
+    const rb = rank(b);
+    for (let i = 0; i < ra.length; i += 1) {
+      if (ra[i] !== rb[i]) return ra[i] - rb[i];
+    }
+    return 0;
+  });
+}
+
+/** Discovery progress of one chapter, using the caller's discovery predicate. */
+export function getChapterProgress(
+  chapter: VocabularyCollectionChapter,
+  isDiscovered: (vocabId: string) => boolean
+): ChapterProgressView {
+  const total = chapter.entryIds.length;
+  const discovered = chapter.entryIds.filter((id) => isDiscovered(id)).length;
+  return {
+    chapterId: chapter.id,
+    categoryId: chapter.categoryId,
+    titleGerman: chapter.titleGerman,
+    discovered,
+    total,
+    remaining: total - discovered,
+    // A chapter with entries is completed once every one of them is discovered.
+    isCompleted: total > 0 && discovered === total,
+  };
+}
+
+/** Discovered word count of a category (across all its currently-available chapters). */
+export function getCategoryDiscoveredCount(
+  categoryId: CategoryId,
+  isDiscovered: (vocabId: string) => boolean
+): number {
+  return getChaptersForCategory(categoryId).reduce(
+    (sum, chapter) =>
+      sum + chapter.entryIds.filter((id) => isDiscovered(id)).length,
+    0
+  );
+}
+
+/**
+ * Collection view of a category. Note there is no category-level "isCompleted": a
+ * category is never permanently complete, callers compare completedChapters against
+ * availableChapters (which only counts chapters that exist today).
+ */
+export function buildCategoryCollectionView(
+  categoryId: CategoryId,
+  isDiscovered: (vocabId: string) => boolean
+): CategoryCollectionView {
+  const chapters = getChaptersForCategory(categoryId).map((chapter) =>
+    getChapterProgress(chapter, isDiscovered)
+  );
+  return {
+    categoryId,
+    discoveredWords: chapters.reduce((sum, c) => sum + c.discovered, 0),
+    totalWords: chapters.reduce((sum, c) => sum + c.total, 0),
+    availableChapters: chapters.length,
+    completedChapters: chapters.filter((c) => c.isCompleted).length,
+    chapters,
+  };
+}
+
+/** Aggregate discovery progress of a whole area over its currently-available chapters. */
+export function getAreaProgress(
+  areaId: CollectionAreaId,
+  isDiscovered: (vocabId: string) => boolean
+): AreaProgressView {
+  const chapters = getChaptersForArea(areaId).map((chapter) =>
+    getChapterProgress(chapter, isDiscovered)
+  );
+  const completedChapters = chapters.filter((c) => c.isCompleted).length;
+  return {
+    areaId,
+    discoveredWords: chapters.reduce((sum, c) => sum + c.discovered, 0),
+    totalWords: chapters.reduce((sum, c) => sum + c.total, 0),
+    availableChapters: chapters.length,
+    completedChapters,
+    isCompleted: chapters.length > 0 && completedChapters === chapters.length,
+  };
 }
