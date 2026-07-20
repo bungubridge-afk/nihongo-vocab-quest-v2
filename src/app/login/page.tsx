@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button, Card } from "@/components/ui";
 import { AuthFormField } from "@/components/auth/AuthFormField";
 import { AuthNotConfigured } from "@/components/auth/AuthNotConfigured";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { useAuth } from "@/hooks/useAuth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { sanitizeInternalRedirect } from "@/lib/auth/redirect";
@@ -43,6 +44,7 @@ function LoginContent() {
 
   const nextPath = sanitizeInternalRedirect(searchParams.get("next"));
   const callbackFailed = searchParams.get("error") === "callback";
+  const oauthFailed = searchParams.get("error") === "oauth";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -124,6 +126,20 @@ function LoginContent() {
             bitte melde dich an oder fordere einen neuen Link an.
           </p>
         ) : null}
+
+        {oauthFailed && formError === null ? (
+          <p
+            role="alert"
+            className="mt-4 rounded-xl border border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-3 py-2 text-sm font-semibold break-words text-[var(--color-danger)]"
+          >
+            Die Anmeldung mit Google wurde abgebrochen oder konnte nicht abgeschlossen
+            werden. Bitte versuche es erneut.
+          </p>
+        ) : null}
+
+        <div className="mt-5">
+          <SocialAuthButtons nextPath={nextPath} />
+        </div>
 
         <form onSubmit={handleSubmit} noValidate className="mt-5 flex flex-col gap-4">
           <AuthFormField

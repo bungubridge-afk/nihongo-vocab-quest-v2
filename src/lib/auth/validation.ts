@@ -71,3 +71,18 @@ export function mapAuthErrorToGerman(error: AuthErrorLike | null): string {
       return GENERIC_AUTH_ERROR;
   }
 }
+
+const GOOGLE_START_ERROR =
+  "Die Anmeldung mit Google konnte nicht gestartet werden. Bitte versuche es erneut.";
+
+/**
+ * Same mapping as `mapAuthErrorToGerman`, but for failures to *start* the Google
+ * OAuth flow (the `signInWithOAuth` call itself, before any redirect happens).
+ * Known cases (e.g. rate limiting) keep their specific message; anything unmapped
+ * falls back to the Google-specific copy instead of the generic one, since the user
+ * just clicked "Mit Google fortfahren" and that's the action that failed.
+ */
+export function mapGoogleOAuthErrorToGerman(error: AuthErrorLike | null): string {
+  const mapped = mapAuthErrorToGerman(error);
+  return mapped === GENERIC_AUTH_ERROR ? GOOGLE_START_ERROR : mapped;
+}

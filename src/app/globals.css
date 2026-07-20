@@ -806,12 +806,24 @@ body {
   text-transform: uppercase;
 }
 
+/* ===== Auth: Google sign-in loading spinner ===== */
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.auth-spinner {
+  animation: auth-spin 0.7s linear infinite;
+}
+
 /* Respect reduced-motion: keep states visible, drop the movement. */
 @media (prefers-reduced-motion: reduce) {
   .quest-node-pulse,
   .levelup-pop,
   .unlock-shine,
-  .animate-pop-in {
+  .animate-pop-in,
+  .auth-spinner {
     animation: none;
   }
 

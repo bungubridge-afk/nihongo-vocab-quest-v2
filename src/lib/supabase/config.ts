@@ -17,6 +17,10 @@ export interface SupabaseConfig {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_PUBLISHABLE_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+// Display-only feature flag — not a secret, just decides whether the Google button
+// renders. The actual Google Client ID/Secret live in the Supabase dashboard, never
+// in app code or env vars here.
+const GOOGLE_AUTH_ENABLED_RAW = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_AUTH ?? "";
 
 function isValidHttpUrl(value: string): boolean {
   try {
@@ -38,6 +42,16 @@ export function getSupabaseConfig(): SupabaseConfig | null {
 
 export function isSupabaseConfigured(): boolean {
   return getSupabaseConfig() !== null;
+}
+
+/**
+ * Whether the Google sign-in button should render. Requires both a working Supabase
+ * config AND the explicit opt-in flag — this prevents a "Mit Google fortfahren" button
+ * from appearing before the Google provider has actually been set up in the Supabase
+ * dashboard (which would otherwise fail every click).
+ */
+export function isGoogleAuthEnabled(): boolean {
+  return isSupabaseConfigured() && GOOGLE_AUTH_ENABLED_RAW.trim().toLowerCase() === "true";
 }
 
 let hasWarnedMissingConfig = false;

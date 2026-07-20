@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button, Card } from "@/components/ui";
 import { AuthFormField } from "@/components/auth/AuthFormField";
 import { AuthNotConfigured } from "@/components/auth/AuthNotConfigured";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { useAuth } from "@/hooks/useAuth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { sanitizeInternalRedirect } from "@/lib/auth/redirect";
@@ -170,6 +171,10 @@ function SignupContent() {
           <li>Area 1 bleibt kostenlos.</li>
           <li>Mit einem Konto kannst du deinen Fortschritt speichern.</li>
         </ul>
+
+        <div className="mt-5">
+          <SocialAuthButtons nextPath={nextPath} />
+        </div>
 
         <form onSubmit={handleSubmit} noValidate className="mt-5 flex flex-col gap-4">
           <AuthFormField
