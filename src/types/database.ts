@@ -18,7 +18,13 @@ import type {
 
 export type UserProfileRow = {
   user_id: string;
-  locale: string;
+  // Nullable since the bilingual rollout: a freshly-created profile starts NULL
+  // ("locale not chosen yet") until the client back-fills the user's choice.
+  locale: string | null;
+  display_name: string | null;
+  username: string | null;
+  profile_completed_at: string | null;
+  username_changed_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -54,6 +60,11 @@ export type Database = {
           user_id: string;
           locale?: string;
         };
+        // display_name/username/*_at columns are deliberately absent here: they
+        // are only ever written through the RPCs below (complete_user_profile /
+        // update_display_name / update_username), never via a direct table
+        // update from the client, so this Update type intentionally can't set
+        // them — a stray `.update({ username: ... })` call is a type error.
         Update: {
           locale?: string;
         };
@@ -97,6 +108,22 @@ export type Database = {
           progress: AppProgress;
           schema_version: number;
         }[];
+      };
+      is_username_available: {
+        Args: { p_username: string };
+        Returns: boolean;
+      };
+      complete_user_profile: {
+        Args: { p_display_name: string; p_username: string };
+        Returns: UserProfileRow;
+      };
+      update_display_name: {
+        Args: { p_display_name: string };
+        Returns: UserProfileRow;
+      };
+      update_username: {
+        Args: { p_username: string };
+        Returns: UserProfileRow;
       };
     };
     Enums: Record<string, never>;

@@ -4,8 +4,11 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge, Button, Card, FeedbackPanel } from "@/components/ui";
 import { SaveProgressHint } from "@/components/auth/SaveProgressHint";
+import { useLanguage } from "@/hooks/useLanguage";
 import { getQuestCategory } from "@/lib/questData";
 import { buildLessonQuestions, getFeedbackPayload } from "@/lib/quizBuilder";
+import { localizeContent } from "@/i18n/localizeContent";
+import { formatMessage } from "@/i18n/getMessages";
 import {
   playCorrectSound,
   playFailedResultSound,
@@ -53,23 +56,27 @@ export default function LessonPage() {
 }
 
 function LoadingFallback() {
+  const { messages } = useLanguage();
   return (
     <main className="flex flex-1 items-center justify-center p-8">
-      <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Lädt…</p>
+      <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
+        {messages.common.loading}
+      </p>
     </main>
   );
 }
 
 function NotFoundView({ onHome }: { onHome: () => void }) {
+  const { messages } = useLanguage();
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md text-center">
         <p className="text-lg font-bold text-[var(--color-ink)]">
-          Diese Kategorie wurde nicht gefunden.
+          {messages.lesson.notFoundTitle}
         </p>
         <div className="mt-5">
           <Button variant="primary" onClick={onHome}>
-            Zurück zur Karte
+            {messages.lesson.backToMap}
           </Button>
         </div>
       </Card>
@@ -78,15 +85,16 @@ function NotFoundView({ onHome }: { onHome: () => void }) {
 }
 
 function LockedView({ onHome }: { onHome: () => void }) {
+  const { messages } = useLanguage();
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md text-center">
         <p className="text-lg font-bold text-[var(--color-ink)]">
-          Diese Kategorie ist noch gesperrt.
+          {messages.lesson.lockedTitle}
         </p>
         <div className="mt-5">
           <Button variant="primary" onClick={onHome}>
-            Zurück zur Karte
+            {messages.lesson.backToMap}
           </Button>
         </div>
       </Card>
@@ -147,7 +155,11 @@ interface LessonSessionProps {
 }
 
 function LessonSession({ category, onHome }: LessonSessionProps) {
-  const baseQuestions = useMemo(() => buildLessonQuestions(category), [category]);
+  const { locale, messages } = useLanguage();
+  const baseQuestions = useMemo(
+    () => buildLessonQuestions(category, locale),
+    [category, locale]
+  );
   const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[] | null>(null);
 
   useEffect(() => {
@@ -254,27 +266,32 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
     );
   }
 
-  const feedback = answered ? getFeedbackPayload(currentQuestion) : null;
+  const feedback = answered ? getFeedbackPayload(currentQuestion, locale) : null;
 
   return (
     <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={onHome}>
-            Abbrechen
+            {messages.lesson.cancel}
           </Button>
-          <Badge variant="yellow">insgesamt +{category.rewardXp} XP</Badge>
+          <Badge variant="yellow">
+            {formatMessage(messages.lesson.totalXpBadge, { xp: category.rewardXp })}
+          </Badge>
         </div>
 
         <div>
           <p className="text-xs font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
-            {getEtappeDisplayName(category.id)}
+            {getEtappeDisplayName(category.id, locale)}
           </p>
           <h1 className="text-2xl font-extrabold text-[var(--color-ink)]">
-            {category.stageTitle}
+            {localizeContent(category.stageTitle, locale)}
           </h1>
           <p className="mt-1 text-sm font-semibold text-[var(--color-ink-soft)]">
-            {questionIndex + 1} / {questions.length}
+            {formatMessage(messages.lesson.progress, {
+              current: questionIndex + 1,
+              total: questions.length,
+            })}
           </p>
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--color-secondary-border)]">
             <div
@@ -287,7 +304,7 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
         <Card variant={isChallengeQuestion ? "challenge" : "default"}>
           {isChallengeQuestion ? (
             <Badge variant="yellow" className="mb-3">
-              Abschluss-Challenge
+              {messages.lesson.finalChallenge}
             </Badge>
           ) : null}
 
@@ -347,7 +364,7 @@ function LessonSession({ category, onHome }: LessonSessionProps) {
             shortTip={feedback.shortTip}
             detailTip={feedback.detailTip}
             onNext={handleNext}
-            nextLabel="Weiter"
+            nextLabel={messages.feedback.next}
           />
         ) : null}
       </div>
@@ -378,6 +395,7 @@ function ResultView({
   onHome,
   onRetry,
 }: ResultViewProps) {
+  const { locale, messages } = useLanguage();
   const hasPlayedResultSoundRef = useRef(false);
 
   const isFirstClear = Boolean(completionResult?.firstClear);
@@ -413,28 +431,30 @@ function ResultView({
     return () => window.clearTimeout(timer);
   }, [isFirstClear, progressAfter.progressPercent]);
 
-  const displayName = getEtappeDisplayName(category.id);
+  const displayName = getEtappeDisplayName(category.id, locale);
 
   if (challengeFailed || !completionResult) {
     return (
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <Card className="animate-pop-in w-full max-w-md text-center">
-          <p className="text-2xl font-extrabold text-[var(--color-ink)]">Fast geschafft</p>
+          <p className="text-2xl font-extrabold text-[var(--color-ink)]">
+            {messages.result.almostTitle}
+          </p>
           <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-            Abschluss-Challenge noch einmal üben
+            {messages.result.almostSubtitle}
           </p>
 
           <div className="mt-5 flex justify-center gap-3">
-            <Badge variant="gray">XP +0</Badge>
-            <Badge variant="gray">0 Karten</Badge>
+            <Badge variant="gray">{messages.result.xpZero}</Badge>
+            <Badge variant="gray">{messages.result.cardsZero}</Badge>
           </div>
 
           <div className="mt-6 flex flex-col gap-3">
             <Button variant="primary" onClick={onRetry}>
-              Noch einmal
+              {messages.result.tryAgain}
             </Button>
             <Button variant="secondary" onClick={onHome}>
-              Zurück zur Karte
+              {messages.result.backToMap}
             </Button>
           </div>
         </Card>
@@ -447,30 +467,30 @@ function ResultView({
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <Card className="animate-pop-in w-full max-w-md text-center">
           <p className="text-2xl font-extrabold text-[var(--color-ink)]">
-            Wiederholung abgeschlossen
+            {messages.result.reviewDoneTitle}
           </p>
           <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{displayName}</p>
 
           <div className="mt-5 rounded-2xl border border-[var(--color-secondary-border)] bg-white/80 p-4 text-left">
             <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-              XP erhalten
+              {messages.result.xpReceived}
             </p>
             <div className="mt-2 flex items-center justify-between text-sm font-bold text-[var(--color-ink)]">
-              <span>Wiederholung</span>
+              <span>{messages.result.reviewLabel}</span>
               <span>+0 XP</span>
             </div>
           </div>
 
           <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
-            Wiederholungen stärken dein Wissen, geben aber aktuell keine zusätzlichen XP.
+            {messages.result.reviewNoXpNote}
           </p>
 
           <div className="mt-6 flex flex-col gap-3">
             <Button variant="secondary" onClick={onHome}>
-              Zurück zur Karte
+              {messages.result.backToMap}
             </Button>
             <Button variant="ghost" onClick={onRetry}>
-              Noch einmal
+              {messages.result.tryAgain}
             </Button>
           </div>
         </Card>
@@ -492,55 +512,71 @@ function ResultView({
             .filter(Boolean)
             .join(" ")}
         >
-          {leveledUp ? `Level ${completionResult.level} erreicht!` : "Etappe abgeschlossen!"}
+          {leveledUp
+            ? formatMessage(messages.result.levelReached, { level: completionResult.level })
+            : messages.result.stageCompleted}
         </p>
         <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-          {displayName} · {category.stageTitle}
+          {displayName} · {localizeContent(category.stageTitle, locale)}
         </p>
 
         <div className="mt-5 rounded-2xl border border-[var(--color-secondary-border)] bg-white/80 p-4 text-left">
           <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-            XP erhalten
+            {messages.result.xpReceived}
           </p>
           <div className="mt-2 flex items-center justify-between text-sm text-[var(--color-ink)]">
-            <span>Etappenabschluss</span>
+            <span>{messages.result.stageCompletionLabel}</span>
             <span className="font-bold">+{completionResult.gainedXp} XP</span>
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-[var(--color-secondary-border)] pt-2 text-sm font-bold text-[var(--color-ink)]">
-            <span>Gesamt</span>
+            <span>{messages.result.total}</span>
             <span>+{completionResult.gainedXp} XP</span>
           </div>
         </div>
 
         <div className="mt-4 text-left">
           <div className="flex items-center justify-between text-xs font-semibold text-[var(--color-ink-soft)]">
-            <span>Vorher: {previousXp} XP</span>
-            <span>Jetzt: {totalXpAfter} XP</span>
+            <span>{formatMessage(messages.result.before, { xp: previousXp })}</span>
+            <span>{formatMessage(messages.result.now, { xp: totalXpAfter })}</span>
           </div>
           <div className="xp-bar-track mt-1.5" aria-hidden="true">
             <div className="xp-bar-fill" style={{ width: `${xpBarPercent}%` }} />
           </div>
           <p className="mt-1.5 text-xs font-semibold text-[var(--color-ink-soft)]">
             {leveledUp
-              ? `Level ${previousLevel} → Level ${completionResult.level}`
-              : `Level ${progressAfter.currentLevel}`}
+              ? formatMessage(messages.result.levelTransition, {
+                  from: previousLevel,
+                  to: completionResult.level,
+                })
+              : formatMessage(messages.result.levelCurrent, {
+                  level: progressAfter.currentLevel,
+                })}
             {" · "}
-            Noch {progressAfter.xpRemaining} XP bis Level {progressAfter.nextLevel}
+            {formatMessage(messages.result.xpToNext, {
+              xp: progressAfter.xpRemaining,
+              level: progressAfter.nextLevel,
+            })}
           </p>
         </div>
 
         <div className="mt-5 flex flex-wrap justify-center gap-3">
-          <Badge variant="blue">{completionResult.newCards.length} Karten gesammelt</Badge>
+          <Badge variant="blue">
+            {formatMessage(messages.result.cardsCollected, {
+              count: completionResult.newCards.length,
+            })}
+          </Badge>
           {nextCategory && nextCategoryId ? (
             <Badge variant="yellow" className="unlock-shine">
-              {getEtappeDisplayName(nextCategoryId)} freigeschaltet
+              {formatMessage(messages.result.stageUnlocked, {
+                stage: getEtappeDisplayName(nextCategoryId, locale),
+              })}
             </Badge>
           ) : null}
         </div>
 
         <div className="mt-6">
           <Button variant="primary" onClick={onHome} className="w-full">
-            Zurück zur Karte
+            {messages.result.backToMap}
           </Button>
         </div>
 

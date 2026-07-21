@@ -3,6 +3,9 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge, Button, Card, FeedbackPanel } from "@/components/ui";
+import { useLanguage } from "@/hooks/useLanguage";
+import { localizeContent } from "@/i18n/localizeContent";
+import { formatMessage } from "@/i18n/getMessages";
 import { getVocabById } from "@/lib/vocabData";
 import { buildPracticeQuestions, getFeedbackPayload } from "@/lib/quizBuilder";
 import { speakJapanese } from "@/lib/speech";
@@ -52,21 +55,27 @@ export default function PracticePage() {
 }
 
 function LoadingFallback() {
+  const { messages } = useLanguage();
   return (
     <main className="flex flex-1 items-center justify-center p-8">
-      <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Lädt…</p>
+      <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
+        {messages.common.loading}
+      </p>
     </main>
   );
 }
 
 function NotFoundView({ onBack }: { onBack: () => void }) {
+  const { messages } = useLanguage();
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md text-center">
-        <p className="text-lg font-bold text-[var(--color-ink)]">Wortkarte nicht gefunden.</p>
+        <p className="text-lg font-bold text-[var(--color-ink)]">
+          {messages.practice.notFoundTitle}
+        </p>
         <div className="mt-5">
           <Button variant="primary" onClick={onBack}>
-            Zur Sammlung
+            {messages.practice.toCollection}
           </Button>
         </div>
       </Card>
@@ -75,21 +84,22 @@ function NotFoundView({ onBack }: { onBack: () => void }) {
 }
 
 function NotCollectedView({ onBack, onHome }: { onBack: () => void; onHome: () => void }) {
+  const { messages } = useLanguage();
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card variant="locked" className="w-full max-w-md text-center">
         <p className="text-lg font-bold text-[var(--color-ink)]">
-          Diese Karte wurde noch nicht gesammelt.
+          {messages.practice.notCollectedTitle}
         </p>
         <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-          Schließe zuerst die passende Lektion ab, um diese Karte zu üben.
+          {messages.practice.notCollectedBody}
         </p>
         <div className="mt-5 flex flex-col gap-3">
           <Button variant="primary" onClick={onBack}>
-            Zur Wortkarten-Sammlung
+            {messages.practice.backToCollection}
           </Button>
           <Button variant="secondary" onClick={onHome}>
-            Zur Karte
+            {messages.vocabulary.toMap}
           </Button>
         </div>
       </Card>
@@ -170,7 +180,11 @@ interface PracticeSessionProps {
 }
 
 function PracticeSession({ vocab, onBack }: PracticeSessionProps) {
-  const baseQuestions = useMemo(() => buildPracticeQuestions(vocab.id), [vocab.id]);
+  const { locale, messages } = useLanguage();
+  const baseQuestions = useMemo(
+    () => buildPracticeQuestions(vocab.id, locale),
+    [vocab.id, locale]
+  );
   const [shuffledQuestions, setShuffledQuestions] = useState<QuizQuestion[] | null>(null);
 
   useEffect(() => {
@@ -278,25 +292,31 @@ function PracticeSession({ vocab, onBack }: PracticeSessionProps) {
     );
   }
 
-  const feedback = answered && !isSpeakingQuestion ? getFeedbackPayload(currentQuestion) : null;
+  const feedback =
+    answered && !isSpeakingQuestion ? getFeedbackPayload(currentQuestion, locale) : null;
 
   return (
     <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={onBack}>
-            Zur Sammlung
+            {messages.practice.toCollection}
           </Button>
-          <Badge variant="blue">Sub Quest</Badge>
+          <Badge variant="blue">{messages.practice.subQuest}</Badge>
         </div>
 
         <div>
           <p className="text-xs font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
             {vocab.kanji}
           </p>
-          <h1 className="text-2xl font-extrabold text-[var(--color-ink)]">{vocab.german}</h1>
+          <h1 className="text-2xl font-extrabold text-[var(--color-ink)]">
+            {localizeContent(vocab.german, locale)}
+          </h1>
           <p className="mt-1 text-sm font-semibold text-[var(--color-ink-soft)]">
-            {questionIndex + 1} / {questions.length}
+            {formatMessage(messages.practice.progress, {
+              current: questionIndex + 1,
+              total: questions.length,
+            })}
           </p>
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--color-secondary-border)]">
             <div
@@ -371,7 +391,7 @@ function PracticeSession({ vocab, onBack }: PracticeSessionProps) {
                 shortTip={feedback.shortTip}
                 detailTip={feedback.detailTip}
                 onNext={handleNext}
-                nextLabel="Weiter"
+                nextLabel={messages.feedback.next}
               />
             ) : null}
           </>
@@ -390,6 +410,7 @@ interface SpeakingChallengeProps {
 }
 
 function SpeakingChallenge({ question, onSuccess, onSkip }: SpeakingChallengeProps) {
+  const { messages } = useLanguage();
   // null = not yet determined (before the client-only effect ran; SSR-safe default).
   const [supported, setSupported] = useState<boolean | null>(null);
   const [phase, setPhase] = useState<SpeakingPhase>("idle");
@@ -455,26 +476,26 @@ function SpeakingChallenge({ question, onSuccess, onSkip }: SpeakingChallengePro
   const failureMessage = (() => {
     if (phase !== "fail") return null;
     if (failureReason === "permission-denied") {
-      return "Der Mikrofon-Zugriff ist blockiert. Du kannst die Übung überspringen.";
+      return messages.practice.micBlocked;
     }
     if (failureReason === "no-speech") {
-      return "Ich habe nichts gehört. Versuch es noch einmal.";
+      return messages.practice.noSpeech;
     }
     if (failureReason === "unavailable") {
-      return "Die Spracherkennung ist gerade nicht verfügbar. Du kannst die Übung überspringen.";
+      return messages.practice.recognitionUnavailable;
     }
-    return "Noch nicht ganz. Versuch es noch einmal.";
+    return messages.practice.notQuite;
   })();
 
   return (
     <Card variant="default">
       <div className="flex items-center justify-between">
-        <Badge variant="yellow">Speaking Challenge</Badge>
+        <Badge variant="yellow">{messages.practice.speakingBadge}</Badge>
         <button
           type="button"
           onClick={() => speakJapanese(question.speechText ?? "")}
-          aria-label="Aussprache anhören"
-          title="Aussprache anhören"
+          aria-label={messages.practice.listenAria}
+          title={messages.practice.listenTitle}
           className="tap-scale flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary-dark)] transition-colors hover:bg-[var(--color-primary)] hover:text-white"
         >
           <svg
@@ -495,7 +516,7 @@ function SpeakingChallenge({ question, onSuccess, onSkip }: SpeakingChallengePro
       </div>
 
       <p className="mt-4 text-sm font-semibold text-[var(--color-ink-soft)]">
-        Sprich den Satz laut aus.
+        {messages.practice.speakSentence}
       </p>
       <p className="mt-2 text-2xl font-extrabold text-[var(--color-ink)]">{question.speechText}</p>
       <p className="mt-2 text-sm text-[var(--color-ink-soft)]">{question.speechKana}</p>
@@ -505,10 +526,10 @@ function SpeakingChallenge({ question, onSuccess, onSkip }: SpeakingChallengePro
       {supported === false ? (
         <div className="mt-5 flex flex-col gap-3">
           <p className="rounded-xl bg-[var(--color-locked-bg)] px-4 py-3 text-sm font-semibold text-[var(--color-ink-soft)]">
-            Spracherkennung wird in diesem Browser nicht unterstützt.
+            {messages.practice.notSupported}
           </p>
           <Button variant="secondary" onClick={onSkip} className="w-full">
-            Überspringen
+            {messages.practice.skip}
           </Button>
         </div>
       ) : (
@@ -516,20 +537,22 @@ function SpeakingChallenge({ question, onSuccess, onSkip }: SpeakingChallengePro
           {phase === "success" ? (
             <>
               <p className="rounded-xl bg-[var(--color-primary-soft)] px-4 py-3 text-sm font-bold text-[var(--color-primary-dark)]">
-                Gut gesprochen!
+                {messages.practice.wellSpoken}
               </p>
               {heardTranscript ? (
-                <p className="text-xs text-[var(--color-ink-soft)]">Verstanden: {heardTranscript}</p>
+                <p className="text-xs text-[var(--color-ink-soft)]">
+                  {formatMessage(messages.practice.understood, { text: heardTranscript })}
+                </p>
               ) : null}
               <Button variant="primary" onClick={onSuccess} className="w-full">
-                Weiter
+                {messages.feedback.next}
               </Button>
             </>
           ) : (
             <>
               {listening ? (
                 <p className="rounded-xl bg-[var(--color-blue-soft)] px-4 py-3 text-sm font-bold text-[var(--color-blue)]">
-                  Ich höre zu...
+                  {messages.practice.listening}
                 </p>
               ) : null}
 
@@ -539,12 +562,14 @@ function SpeakingChallenge({ question, onSuccess, onSkip }: SpeakingChallengePro
                 </p>
               ) : null}
               {phase === "fail" && heardTranscript ? (
-                <p className="text-xs text-[var(--color-ink-soft)]">Verstanden: {heardTranscript}</p>
+                <p className="text-xs text-[var(--color-ink-soft)]">
+                  {formatMessage(messages.practice.understood, { text: heardTranscript })}
+                </p>
               ) : null}
 
               {retriesExhausted ? (
                 <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
-                  Kein Problem – du kannst die Übung überspringen. Das zählt nicht als Fehler.
+                  {messages.practice.retriesExhausted}
                 </p>
               ) : (
                 <Button
@@ -553,12 +578,12 @@ function SpeakingChallenge({ question, onSuccess, onSkip }: SpeakingChallengePro
                   className="w-full"
                   disabled={listening}
                 >
-                  {phase === "fail" ? "Noch einmal sprechen" : "Sprechen"}
+                  {phase === "fail" ? messages.practice.speakAgain : messages.practice.speak}
                 </Button>
               )}
 
               <Button variant="secondary" onClick={onSkip} className="w-full" disabled={listening}>
-                Überspringen
+                {messages.practice.skip}
               </Button>
             </>
           )}
@@ -586,6 +611,7 @@ function PracticeResultView({
   onBack,
   onRetry,
 }: PracticeResultViewProps) {
+  const { locale, messages } = useLanguage();
   const hasPlayedResultSoundRef = useRef(false);
 
   useEffect(() => {
@@ -604,25 +630,31 @@ function PracticeResultView({
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card variant="highlight" className="w-full max-w-md text-center">
-        <p className="text-2xl font-extrabold text-[var(--color-ink)]">Sub Quest abgeschlossen</p>
+        <p className="text-2xl font-extrabold text-[var(--color-ink)]">
+          {messages.practice.resultTitle}
+        </p>
         <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-          {vocab.kanji} · {vocab.german}
+          {vocab.kanji} · {localizeContent(vocab.german, locale)}
         </p>
 
         <div className="mt-5 flex flex-wrap justify-center gap-3">
           <Badge variant={correctCount === total ? "green" : "yellow"}>
-            {correctCount} / {total} richtig
+            {formatMessage(messages.practice.correctOfTotal, { correct: correctCount, total })}
           </Badge>
-          <Badge variant="gray">{total} Fragen abgeschlossen</Badge>
-          {speakingSkipped ? <Badge variant="gray">Sprechen übersprungen</Badge> : null}
+          <Badge variant="gray">
+            {formatMessage(messages.practice.questionsDone, { total })}
+          </Badge>
+          {speakingSkipped ? (
+            <Badge variant="gray">{messages.practice.speakingSkipped}</Badge>
+          ) : null}
         </div>
 
         <div className="mt-6 flex flex-col gap-3">
           <Button variant="primary" onClick={onBack} className="w-full">
-            Zur Sammlung
+            {messages.practice.toCollection}
           </Button>
           <Button variant="secondary" onClick={onRetry} className="w-full">
-            Noch einmal üben
+            {messages.practice.practiceAgain}
           </Button>
         </div>
       </Card>

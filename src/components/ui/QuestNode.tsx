@@ -1,6 +1,24 @@
+"use client";
+
+import { useLanguage } from "@/hooks/useLanguage";
+import type { Messages } from "@/i18n/getMessages";
+
 export type QuestNodeStatus = "current" | "completed" | "unlocked" | "locked" | "review";
 
 export type QuestStageIcon = "cafe" | "reise" | "schule" | "freunde" | "finale";
+
+/** Localized status label for a node, shared by every quest surface. */
+export function questStatusLabel(status: QuestNodeStatus, messages: Messages): string {
+  switch (status) {
+    case "completed":
+      return messages.quest.statusCompleted;
+    case "locked":
+      return messages.quest.statusLocked;
+    // current / unlocked / review all read as "Ready".
+    default:
+      return messages.quest.statusReady;
+  }
+}
 
 export interface QuestNodeProps {
   title: string;
@@ -15,14 +33,6 @@ export interface QuestNodeProps {
   onSelect: () => void;
   className?: string;
 }
-
-const STATUS_LABEL: Record<QuestNodeStatus, string> = {
-  current: "Bereit",
-  completed: "Abgeschlossen",
-  unlocked: "Bereit",
-  locked: "Gesperrt",
-  review: "Bereit",
-};
 
 const CIRCLE_STATUS_CLASSES: Record<QuestNodeStatus, string> = {
   current:
@@ -132,7 +142,7 @@ function LockMiniBadge() {
   );
 }
 
-function HereMarker() {
+function HereMarker({ label }: { label: string }) {
   return (
     <div className="quest-node-here" aria-hidden="true">
       <svg
@@ -147,7 +157,7 @@ function HereMarker() {
         <path d="M5 21V4" />
         <path d="M5 4h11l-2.5 3.5L16 11H5" fill="currentColor" stroke="none" />
       </svg>
-      <span>Du bist hier</span>
+      <span>{label}</span>
     </div>
   );
 }
@@ -167,9 +177,10 @@ export function QuestNode({
   onSelect,
   className,
 }: QuestNodeProps) {
+  const { messages } = useLanguage();
   const isLocked = status === "locked";
   const isCompleted = status === "completed";
-  const statusLabel = STATUS_LABEL[status];
+  const statusLabel = questStatusLabel(status, messages);
 
   const circleClasses = [
     "quest-node-circle flex items-center justify-center rounded-full border-2",
@@ -197,7 +208,7 @@ export function QuestNode({
       aria-label={`${title} – ${statusLabel}`}
       className={buttonClasses}
     >
-      {status === "current" ? <HereMarker /> : null}
+      {status === "current" ? <HereMarker label={messages.quest.youAreHere} /> : null}
 
       <div className={circleClasses}>
         <StageIcon icon={stageIcon} className={isFinale ? "h-9 w-9" : "h-7 w-7"} />

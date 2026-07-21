@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Card, ProgressPill, QuestMap, QuestStageDetails } from "@/components/ui";
 import type { QuestMapStage, QuestNodeStatus } from "@/components/ui";
+import { useLanguage } from "@/hooks/useLanguage";
+import { localizeContent } from "@/i18n/localizeContent";
+import { formatMessage, type Messages } from "@/i18n/getMessages";
 import {
   clearProfile,
   getCollectedCards,
@@ -35,67 +38,20 @@ interface OnboardingQuestion {
   options: string[];
 }
 
-const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
-  {
-    key: "motivation",
-    title: "Was bringt dich zu Japanisch?",
-    options: [
-      "Japan-Reise",
-      "Anime & Games",
-      "Freunde / Partner",
-      "Alltagssätze",
-      "Kultur",
-      "JLPT / Prüfung",
-    ],
-  },
-  {
-    key: "startLevel",
-    title: "Wie gut ist dein Japanisch gerade?",
-    options: [
-      "Ich starte bei null",
-      "Ich kenne Hiragana",
-      "Ich kenne ein paar Wörter",
-      "A1",
-      "A2",
-      "Ich weiß es nicht",
-    ],
-  },
-  {
-    key: "collectFocus",
-    title: "Was möchtest du sammeln?",
-    options: [
-      "Reise-Wörter",
-      "Café-Sätze",
-      "Wörter für Freunde",
-      "Schule & Lernen",
-      "Alltag",
-      "Mix",
-    ],
-  },
-  {
-    key: "trainingStyle",
-    title: "Wie möchtest du üben?",
-    options: [
-      "Kurze Quiz",
-      "Wortkarten sammeln",
-      "Beispielsätze",
-      "Schreiben",
-      "Wiederholung",
-      "Mix",
-    ],
-  },
-  {
-    key: "questGoal",
-    title: "Was ist dein erstes Ziel?",
-    options: [
-      "Im Café bestellen",
-      "Am Bahnhof zurechtkommen",
-      "Einfache Sätze verstehen",
-      "Mit Freunden sprechen",
-      "Japanisch im Alltag nutzen",
-    ],
-  },
-];
+/** The onboarding flow, built from the current-language catalog. Question order and
+ *  keys are fixed; only the displayed text is localized. The chosen option is stored
+ *  in the profile as free-form display text (not used for any XP/quest logic), so it
+ *  is safely in whatever language the user answered in. */
+function getOnboardingQuestions(messages: Messages): OnboardingQuestion[] {
+  const q = messages.onboarding.questions;
+  return [
+    { key: "motivation", title: q.motivation.title, options: q.motivation.options },
+    { key: "startLevel", title: q.startLevel.title, options: q.startLevel.options },
+    { key: "collectFocus", title: q.collectFocus.title, options: q.collectFocus.options },
+    { key: "trainingStyle", title: q.trainingStyle.title, options: q.trainingStyle.options },
+    { key: "questGoal", title: q.questGoal.title, options: q.questGoal.options },
+  ];
+}
 
 interface ProgressState {
   xp: number;
@@ -126,8 +82,11 @@ interface AppState {
 const INITIAL_APP_STATE: AppState = { mounted: false, profile: null, progress: null };
 
 export default function Home() {
+  const { messages } = useLanguage();
   const [appState, setAppState] = useState<AppState>(INITIAL_APP_STATE);
   const { mounted, profile, progress } = appState;
+
+  const onboardingQuestions = getOnboardingQuestions(messages);
 
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Partial<Record<OnboardingKey, string>>>({});
@@ -143,13 +102,13 @@ export default function Home() {
   function handleSelectOption(option: string) {
     if (selected) return;
     setSelected(option);
-    const key = ONBOARDING_QUESTIONS[step].key;
+    const key = onboardingQuestions[step].key;
     const nextAnswers = { ...answers, [key]: option };
     setAnswers(nextAnswers);
 
     window.setTimeout(() => {
       setSelected(null);
-      if (step + 1 < ONBOARDING_QUESTIONS.length) {
+      if (step + 1 < onboardingQuestions.length) {
         setStep(step + 1);
       } else {
         completeOnboarding(nextAnswers);
@@ -189,24 +148,29 @@ export default function Home() {
   if (!mounted || !progress) {
     return (
       <main className="flex flex-1 items-center justify-center p-8">
-        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Lädt…</p>
+        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
+          {messages.common.loading}
+        </p>
       </main>
     );
   }
 
   if (!profile) {
-    const question = ONBOARDING_QUESTIONS[step];
-    const progressPercent = (step / ONBOARDING_QUESTIONS.length) * 100;
+    const question = onboardingQuestions[step];
+    const progressPercent = (step / onboardingQuestions.length) * 100;
 
     return (
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <Card className="w-full max-w-xl" variant="default">
           <div className="mb-6 flex items-center justify-between">
             <span className="text-xs font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
-              Quest-Setup
+              {messages.onboarding.kicker}
             </span>
             <span className="text-xs font-semibold text-[var(--color-ink-soft)]">
-              Fortschritt {step + 1}/{ONBOARDING_QUESTIONS.length}
+              {formatMessage(messages.onboarding.progress, {
+                current: step + 1,
+                total: onboardingQuestions.length,
+              })}
             </span>
           </div>
 
@@ -236,7 +200,7 @@ export default function Home() {
 
           <div className="mt-6 flex justify-start">
             <Button variant="ghost" size="sm" onClick={handleBack} disabled={step === 0}>
-              Zurück
+              {messages.common.back}
             </Button>
           </div>
         </Card>
@@ -254,6 +218,7 @@ interface HomeQuestMapProps {
 
 function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
   const router = useRouter();
+  const { locale, messages } = useLanguage();
   const { xp, level, collectedCards, completedCategories, unlockedCategories, weakWords } =
     progress;
 
@@ -262,7 +227,8 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
 
   // The stage list, computed once per render from the real unlock/completion truth. XP,
   // card count, and description all come straight from questData — worldMapData only
-  // supplies the icon and (for the finale) the narrative blurb.
+  // supplies the icon and (for the finale) the narrative blurb. Description text stays
+  // in German here and is localized inside the quest cards (localizeContent).
   const stages: QuestMapStage[] = CATEGORY_ORDER.map((categoryId) => {
     const isCompleted = completedCategories.includes(categoryId);
     const isUnlocked = unlockedCategories.includes(categoryId);
@@ -285,7 +251,7 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
 
     return {
       id: categoryId,
-      title: getEtappeDisplayName(categoryId),
+      title: getEtappeDisplayName(categoryId, locale),
       status,
       icon: meta.icon,
       isFinale: isReviewCategory,
@@ -311,20 +277,23 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
         <div className="mb-3 flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-wrap gap-3">
             <ProgressPill
-              label="Level"
+              label={messages.home.levelLabel}
               value={level}
               variant="level"
               progressPercent={levelProgress.progressPercent}
-              subLabel={`Noch ${levelProgress.xpRemaining} XP bis Level ${levelProgress.nextLevel}`}
+              subLabel={formatMessage(messages.home.xpToNextLevel, {
+                xp: levelProgress.xpRemaining,
+                level: levelProgress.nextLevel,
+              })}
             />
-            <ProgressPill label="XP gesamt" value={xp} variant="xp" />
+            <ProgressPill label={messages.home.xpTotalLabel} value={xp} variant="xp" />
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" size="sm" onClick={() => router.push("/review")}>
-              Wiederholung
+              {messages.home.review}
             </Button>
             <Button variant="secondary" size="sm" onClick={onAdjustPlan}>
-              Lernplan anpassen
+              {messages.home.adjustPlan}
             </Button>
           </div>
         </div>
@@ -344,22 +313,21 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
             >
               i
             </span>
-            Wofür sind XP?
+            {messages.home.whatAreXpSummary}
           </summary>
-          <p className="mt-2 rounded-xl bg-white/70 px-3 py-2">
-            XP zeigen deinen gesamten Lernfortschritt und erhöhen dein Level. Neue Etappen
-            werden durch abgeschlossene Quests freigeschaltet – nicht durch XP.
-          </p>
+          <p className="mt-2 rounded-xl bg-white/70 px-3 py-2">{messages.home.whatAreXpBody}</p>
         </details>
 
         <div className="mb-6">
           <p className="text-xs font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
-            Deine Reise
+            {messages.home.journeyKicker}
           </p>
           <h1 className="mt-1 text-2xl font-extrabold text-[var(--color-ink)] sm:text-3xl">
-            {currentWorld.name}
+            {localizeContent(currentWorld.name, locale)}
           </h1>
-          <p className="text-[var(--color-ink-soft)]">{currentWorld.subtitle}</p>
+          <p className="text-[var(--color-ink-soft)]">
+            {localizeContent(currentWorld.subtitle, locale)}
+          </p>
         </div>
 
         <div className="home-grid">
@@ -377,9 +345,11 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
           <div className="home-sidebar">
             <div className="home-area-levelcard">
               <Card variant="default">
-                <p className="font-bold text-[var(--color-ink)]">Dein Level</p>
+                <p className="font-bold text-[var(--color-ink)]">{messages.home.yourLevel}</p>
                 <p className="mt-1 text-2xl font-extrabold text-[var(--color-ink)]">
-                  Level {levelProgress.currentLevel}
+                  {formatMessage(messages.home.levelValue, {
+                    level: levelProgress.currentLevel,
+                  })}
                 </p>
                 <div className="xp-bar-track mt-2" aria-hidden="true">
                   <div
@@ -388,12 +358,20 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
                   />
                 </div>
                 <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">
-                  {levelProgress.xpIntoLevel} / {levelProgress.xpRequiredForLevel} XP
+                  {formatMessage(messages.home.xpIntoLevel, {
+                    into: levelProgress.xpIntoLevel,
+                    required: levelProgress.xpRequiredForLevel,
+                  })}
                 </p>
                 <p className="text-sm text-[var(--color-ink-soft)]">
-                  Noch {levelProgress.xpRemaining} XP bis Level {levelProgress.nextLevel}
+                  {formatMessage(messages.home.xpToNextLevel, {
+                    xp: levelProgress.xpRemaining,
+                    level: levelProgress.nextLevel,
+                  })}
                 </p>
-                <p className="mt-2 text-xs text-[var(--color-ink-soft)]">Gesamt: {xp} XP</p>
+                <p className="mt-2 text-xs text-[var(--color-ink-soft)]">
+                  {formatMessage(messages.home.totalXp, { xp })}
+                </p>
               </Card>
             </div>
 
@@ -418,9 +396,13 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
 
             <div className="home-area-progress">
               <Card variant="default">
-                <p className="font-bold text-[var(--color-ink)]">Reisefortschritt</p>
+                <p className="font-bold text-[var(--color-ink)]">
+                  {messages.home.journeyProgress}
+                </p>
                 <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">
-                  {completedCategories.length} / 5 Etappen geschafft
+                  {formatMessage(messages.home.stagesCleared, {
+                    done: completedCategories.length,
+                  })}
                 </p>
                 <div className="mt-2 flex gap-1.5" aria-hidden="true">
                   {CATEGORY_ORDER.map((id) => (
@@ -435,29 +417,33 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
                   ))}
                 </div>
                 <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-                  Kleine Schritte, echte Sätze.
+                  {messages.home.smallSteps}
                 </p>
               </Card>
             </div>
 
             <div className="home-area-training">
               <Card variant="default" onClick={() => router.push("/review")}>
-                <p className="font-bold text-[var(--color-ink)]">Trainingslager</p>
+                <p className="font-bold text-[var(--color-ink)]">{messages.home.trainingCamp}</p>
                 <Badge variant={weakWords.length > 0 ? "yellow" : "gray"} className="mt-2">
-                  {weakWords.length > 0 ? `${weakWords.length} Wörter` : "Bereit"}
+                  {weakWords.length > 0
+                    ? formatMessage(messages.home.weakWordsCount, { count: weakWords.length })
+                    : messages.home.ready}
                 </Badge>
                 {weakWords.length === 0 ? (
                   <>
                     <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-                      Noch keine schwachen Wörter.
+                      {messages.home.noWeakWordsTitle}
                     </p>
                     <p className="text-sm text-[var(--color-ink-soft)]">
-                      Starte ein Quiz, um deine Wiederholungsliste zu bauen.
+                      {messages.home.noWeakWordsBody}
                     </p>
                   </>
                 ) : (
                   <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-                    {weakWords.length} Wörter zum Üben
+                    {formatMessage(messages.home.weakWordsToPractice, {
+                      count: weakWords.length,
+                    })}
                   </p>
                 )}
               </Card>
@@ -472,9 +458,8 @@ function HomeQuestMap({ progress, onAdjustPlan }: HomeQuestMapProps) {
 /**
  * The single entry point from Home into the Kotoba-Zukan. One tappable card (no nested
  * buttons): icon, discovered-word count and a CTA chip that is styled, not a separate
- * control. Deliberately quieter than the quest map — a supporting reward showcase, not
- * the main path. The count shows only what was discovered; no fixed grand total, since
- * the collection grows with future chapters.
+ * control. The count shows only what was discovered; no fixed grand total, since the
+ * collection grows with future chapters.
  */
 function ZukanEntryCard({
   discoveredCount,
@@ -483,8 +468,11 @@ function ZukanEntryCard({
   discoveredCount: number;
   onOpen: () => void;
 }) {
+  const { messages } = useLanguage();
   const countLabel =
-    discoveredCount === 1 ? "1 Wort entdeckt" : `${discoveredCount} Wörter entdeckt`;
+    discoveredCount === 1
+      ? messages.home.zukanOneWordDiscovered
+      : formatMessage(messages.home.zukanWordsDiscovered, { count: discoveredCount });
 
   return (
     <button
@@ -500,17 +488,15 @@ function ZukanEntryCard({
       </span>
       <span className="min-w-0 flex-1 basis-0">
         <span className="block text-[11px] font-bold tracking-wider text-white/85 uppercase">
-          Dein Kotoba-Zukan
+          {messages.home.zukanCardKicker}
         </span>
         <span className="block text-lg font-extrabold text-white">{countLabel}</span>
-        <span className="block text-xs text-white/85">
-          Neue japanische Wörter aus deinen Quests.
-        </span>
+        <span className="block text-xs text-white/85">{messages.home.zukanCardSubtitle}</span>
       </span>
       {/* On very narrow screens the chip wraps onto its own full-width row instead of
           squeezing the text into a tall multi-line column. */}
       <span className="flex min-h-11 w-full items-center justify-center rounded-full bg-white/20 px-3 py-2 text-sm font-bold whitespace-nowrap text-white sm:w-auto sm:shrink-0">
-        Zukan öffnen
+        {messages.home.zukanOpen}
       </span>
     </button>
   );
@@ -538,13 +524,11 @@ function ZukanBookIcon({ className }: { className?: string }) {
 
 /**
  * The next, still-fogged region(s) below the current map — silhouettes, not clickable
- * cards. Reads from `nextAreaPreviews` so a second/third upcoming area later is just
- * another array entry, not new markup here. The dotted connector always sits centered
- * (50%) because the map's finale lane is always centered too. Once the finale itself is
- * completed, the connector picks up a faint green tint — "the road keeps going" — without
- * making the still-locked preview card itself look any more available than it is.
+ * cards. Reads from `nextAreaPreviews` (German text localized here) so a second/third
+ * upcoming area later is just another array entry, not new markup.
  */
 function NextAreaPreview({ finaleCompleted }: { finaleCompleted: boolean }) {
+  const { locale, messages } = useLanguage();
   return (
     <>
       <div
@@ -572,14 +556,16 @@ function NextAreaPreview({ finaleCompleted }: { finaleCompleted: boolean }) {
             </g>
           </svg>
           <p className="relative text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-            Als Nächstes
+            {messages.home.nextAreaKicker}
           </p>
           <p className="relative mt-1 text-lg font-extrabold text-[var(--color-locked)]">
-            {area.title}
+            {localizeContent(area.title, locale)}
           </p>
-          <p className="relative text-sm text-[var(--color-ink-soft)]">{area.subtitle}</p>
+          <p className="relative text-sm text-[var(--color-ink-soft)]">
+            {localizeContent(area.subtitle, locale)}
+          </p>
           <Badge variant="locked" className="relative mt-3">
-            {area.status}
+            {localizeContent(area.status, locale)}
           </Badge>
         </div>
       ))}

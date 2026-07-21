@@ -1,6 +1,7 @@
 "use client";
 
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { useLanguage } from "@/hooks/useLanguage";
 import { isGoogleAuthEnabled } from "@/lib/supabase/config";
 
 export interface SocialAuthButtonsProps {
@@ -13,6 +14,7 @@ export interface SocialAuthButtonsProps {
  * dead button, no layout shift to account for, the email form just starts at the top.
  */
 export function SocialAuthButtons({ nextPath }: SocialAuthButtonsProps) {
+  const { messages } = useLanguage();
   if (!isGoogleAuthEnabled()) return null;
 
   return (
@@ -20,7 +22,9 @@ export function SocialAuthButtons({ nextPath }: SocialAuthButtonsProps) {
       <GoogleAuthButton nextPath={nextPath} />
       <div className="flex items-center gap-3">
         <span aria-hidden="true" className="h-px flex-1 bg-[var(--color-secondary-border)]" />
-        <span className="text-xs font-semibold text-[var(--color-ink-soft)]">oder</span>
+        <span className="text-xs font-semibold text-[var(--color-ink-soft)]">
+          {messages.auth.orDivider}
+        </span>
         <span aria-hidden="true" className="h-px flex-1 bg-[var(--color-secondary-border)]" />
       </div>
     </div>

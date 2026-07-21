@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export interface FeedbackPanelProps {
   isCorrect: boolean;
@@ -30,8 +31,9 @@ export function FeedbackPanel({
   shortTip,
   detailTip,
   onNext,
-  nextLabel = "Weiter",
+  nextLabel,
 }: FeedbackPanelProps) {
+  const { messages } = useLanguage();
   const [showDetail, setShowDetail] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -79,12 +81,12 @@ export function FeedbackPanel({
             : "text-lg font-extrabold text-[var(--color-danger)]"
         }
       >
-        {isCorrect ? "Richtig!" : "Leider falsch"}
+        {isCorrect ? messages.feedback.correct : messages.feedback.incorrect}
       </p>
 
       <div className="mt-2">
         <p className="text-xs font-semibold tracking-wide text-[var(--color-ink-soft)] uppercase">
-          Richtige Antwort
+          {messages.feedback.correctAnswer}
         </p>
         <p className="text-base font-bold text-[var(--color-ink)]">{answer}</p>
       </div>
@@ -96,7 +98,7 @@ export function FeedbackPanel({
       {hasExample ? (
         <div className="soft-card mt-3 px-3 py-2">
           <p className="text-xs font-semibold tracking-wide text-[var(--color-ink-soft)] uppercase">
-            Beispiel
+            {messages.feedback.example}
           </p>
           {exampleJapanese ? (
             <p className="font-bold text-[var(--color-ink)]">{exampleJapanese}</p>
@@ -119,7 +121,7 @@ export function FeedbackPanel({
             onClick={() => setShowDetail((prev) => !prev)}
             className="inline-flex min-h-11 items-center text-sm font-semibold text-[var(--color-primary-dark)] underline underline-offset-2"
           >
-            {showDetail ? "Weniger anzeigen" : "Mehr anzeigen"}
+            {showDetail ? messages.feedback.showLess : messages.feedback.showMore}
           </button>
           {showDetail ? (
             <p className="mt-2 text-sm text-[var(--color-ink-soft)]">{detailTip}</p>
@@ -130,7 +132,7 @@ export function FeedbackPanel({
       {onNext ? (
         <div className="mt-4">
           <Button variant="primary" onClick={onNext} className="w-full">
-            {nextLabel}
+            {nextLabel ?? messages.feedback.next}
           </Button>
         </div>
       ) : null}

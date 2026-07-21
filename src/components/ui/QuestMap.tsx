@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import type { CategoryId } from "@/types/learning";
+import { useLanguage } from "@/hooks/useLanguage";
 import { QuestNode } from "@/components/ui/QuestNode";
 import type { QuestNodeStatus, QuestStageIcon } from "@/components/ui/QuestNode";
 import { QuestStageCompactCard } from "@/components/ui/QuestStageDetails";
@@ -151,6 +152,7 @@ function ApproachDecoration({ finaleStatus }: { finaleStatus: QuestNodeStatus })
  * background (Kyoto motifs today; `theme` is read so a future Area 2 can swap it).
  */
 export function QuestMap({ stages, selectedId, onSelect, onStart, theme = "kyoto", className }: QuestMapProps) {
+  const { messages } = useLanguage();
   const lanes = stages.map((stage, index) => laneXFor(index, stage.isFinale));
 
   // Exactly one stage is ever the auto-scroll target: the "current" stage normally, or
@@ -226,7 +228,7 @@ export function QuestMap({ stages, selectedId, onSelect, onStart, theme = "kyoto
               <path d="M12 7V5M6.6 9.4 5.2 8M17.4 9.4 18.8 8M5 14H3M21 14h-2M4 18.5h16" />
             </svg>
           </span>
-          <span className="quest-start-label">Start</span>
+          <span className="quest-start-label">{messages.quest.startLabelPrefix}</span>
         </div>
       </div>
 

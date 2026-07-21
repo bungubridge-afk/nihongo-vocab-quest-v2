@@ -1,6 +1,8 @@
+"use client";
+
 import type { ReactElement } from "react";
 import type { SpeechRegister } from "@/types/learning";
-import { getRegisterLabel } from "@/lib/registerData";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export interface RegisterBadgeProps {
   register: SpeechRegister;
@@ -63,7 +65,8 @@ const REGISTER_ICON: Partial<Record<SpeechRegister, () => ReactElement>> = {
  * never the only signal.
  */
 export function RegisterBadge({ register, className }: RegisterBadgeProps) {
-  const label = getRegisterLabel(register);
+  const { messages } = useLanguage();
+  const label = messages.register.label[register];
   const Icon = REGISTER_ICON[register];
 
   const classes = [

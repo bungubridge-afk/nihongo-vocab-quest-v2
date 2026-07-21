@@ -7,14 +7,15 @@ import { Button, Card } from "@/components/ui";
 import { AuthFormField } from "@/components/auth/AuthFormField";
 import { AuthNotConfigured } from "@/components/auth/AuthNotConfigured";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { sanitizeInternalRedirect } from "@/lib/auth/redirect";
-import {
-  mapAuthErrorToGerman,
-  validateEmail,
-  validatePassword,
-} from "@/lib/auth/validation";
+import { fetchOwnProfile } from "@/lib/profile/profileRepository";
+import { resolvePostAuthDestination } from "@/lib/profile/postAuthRouting";
+import { mapAuthError, validateEmail, validatePassword } from "@/lib/auth/validation";
 
 export default function LoginPage() {
   return (
@@ -25,9 +26,12 @@ export default function LoginPage() {
 }
 
 function LoadingFallback() {
+  const { messages } = useLanguage();
   return (
     <main className="flex flex-1 items-center justify-center p-8">
-      <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Lädt…</p>
+      <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
+        {messages.common.loading}
+      </p>
     </main>
   );
 }
@@ -41,6 +45,8 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isLoading, isConfigured } = useAuth();
+  const { locale, messages } = useLanguage();
+  const { profile, isLoading: profileLoading } = useUserProfile();
 
   const nextPath = sanitizeInternalRedirect(searchParams.get("next"));
   const callbackFailed = searchParams.get("error") === "callback";
@@ -56,12 +62,13 @@ function LoginContent() {
   const passwordRef = useRef<HTMLInputElement>(null);
   const alertRef = useRef<HTMLDivElement>(null);
 
-  // Already signed in? Straight to the target page — no double login.
+  // Already signed in? Straight to the target page — no double login. Routed
+  // through the same resolvePostAuthDestination() as every other auth entry point,
+  // so an incomplete profile sends them to /profile/setup here too.
   useEffect(() => {
-    if (!isLoading && user !== null) {
-      router.replace(nextPath);
-    }
-  }, [isLoading, user, router, nextPath]);
+    if (isLoading || user === null || profileLoading) return;
+    router.replace(resolvePostAuthDestination(profile, nextPath));
+  }, [isLoading, user, profileLoading, profile, router, nextPath]);
 
   if (!isConfigured) {
     return <AuthNotConfigured />;
@@ -71,9 +78,8 @@ function LoginContent() {
     event.preventDefault();
     if (pending) return;
 
-    const emailError = validateEmail(email);
-    const passwordError =
-      password.trim() === "" ? validatePassword(password) : null;
+    const emailError = validateEmail(email, locale);
+    const passwordError = password.trim() === "" ? validatePassword(password, locale) : null;
     if (emailError || passwordError) {
       setFieldErrors({ email: emailError, password: passwordError });
       setFormError(null);
@@ -99,22 +105,35 @@ function LoginContent() {
 
     if (error) {
       setPending(false);
-      setFormError(mapAuthErrorToGerman(error));
+      setFormError(mapAuthError(error, locale));
       // Move focus to the alert so keyboard/screen-reader users hear it immediately.
       window.setTimeout(() => alertRef.current?.focus(), 0);
       return;
     }
 
-    router.push(nextPath);
+    // Same routing decision as the OAuth/email-confirmation callback: an
+    // incomplete profile goes to /profile/setup instead of straight to nextPath.
+    let signedInProfile: Awaited<ReturnType<typeof fetchOwnProfile>> = null;
+    try {
+      signedInProfile = await fetchOwnProfile(client);
+    } catch {
+      signedInProfile = null;
+    }
+    router.push(resolvePostAuthDestination(signedInProfile, nextPath));
     router.refresh();
   }
 
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md">
-        <h1 className="text-xl font-extrabold text-[var(--color-ink)]">Anmelden</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-xl font-extrabold text-[var(--color-ink)]">
+            {messages.auth.loginTitle}
+          </h1>
+          <LanguageSwitcher variant="compact" />
+        </div>
         <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-          Melde dich an, um deinen Fortschritt in der Cloud zu speichern.
+          {messages.auth.loginSubtitle}
         </p>
 
         {callbackFailed && formError === null ? (
@@ -122,8 +141,7 @@ function LoginContent() {
             role="alert"
             className="mt-4 rounded-xl border border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-3 py-2 text-sm font-semibold break-words text-[var(--color-danger)]"
           >
-            Die Bestätigung hat nicht geklappt. Der Link ist möglicherweise abgelaufen —
-            bitte melde dich an oder fordere einen neuen Link an.
+            {messages.auth.callbackError}
           </p>
         ) : null}
 
@@ -132,8 +150,7 @@ function LoginContent() {
             role="alert"
             className="mt-4 rounded-xl border border-[var(--color-danger)] bg-[var(--color-danger-soft)] px-3 py-2 text-sm font-semibold break-words text-[var(--color-danger)]"
           >
-            Die Anmeldung mit Google wurde abgebrochen oder konnte nicht abgeschlossen
-            werden. Bitte versuche es erneut.
+            {messages.auth.oauthError}
           </p>
         ) : null}
 
@@ -145,7 +162,7 @@ function LoginContent() {
           <AuthFormField
             ref={emailRef}
             id="login-email"
-            label="E-Mail-Adresse"
+            label={messages.auth.email}
             type="email"
             inputMode="email"
             value={email}
@@ -157,7 +174,7 @@ function LoginContent() {
           <AuthFormField
             ref={passwordRef}
             id="login-password"
-            label="Passwort"
+            label={messages.auth.password}
             type="password"
             value={password}
             onChange={setPassword}
@@ -178,7 +195,7 @@ function LoginContent() {
           ) : null}
 
           <Button type="submit" variant="primary" disabled={pending} className="w-full">
-            {pending ? "Wird angemeldet …" : "Anmelden"}
+            {pending ? messages.auth.loginPending : messages.auth.loginSubmit}
           </Button>
         </form>
 
@@ -187,10 +204,10 @@ function LoginContent() {
             href="/forgot-password"
             className="inline-flex min-h-11 items-center font-semibold text-[var(--color-primary-dark)] hover:underline"
           >
-            Passwort vergessen?
+            {messages.auth.forgotPassword}
           </Link>
           <p className="text-[var(--color-ink-soft)]">
-            Noch kein Konto?{" "}
+            {messages.auth.noAccountYet}{" "}
             <Link
               href={
                 nextPath === "/account"
@@ -199,7 +216,7 @@ function LoginContent() {
               }
               className="font-semibold text-[var(--color-primary-dark)] hover:underline"
             >
-              Registrieren
+              {messages.auth.register}
             </Link>
           </p>
         </div>

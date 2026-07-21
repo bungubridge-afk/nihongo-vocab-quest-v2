@@ -7,11 +7,16 @@ import { Button, Card } from "@/components/ui";
 import { AuthFormField } from "@/components/auth/AuthFormField";
 import { AuthNotConfigured } from "@/components/auth/AuthNotConfigured";
 import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { sanitizeInternalRedirect } from "@/lib/auth/redirect";
+import { fetchOwnProfile } from "@/lib/profile/profileRepository";
+import { resolvePostAuthDestination } from "@/lib/profile/postAuthRouting";
 import {
-  mapAuthErrorToGerman,
+  mapAuthError,
   validateEmail,
   validatePassword,
   validatePasswordConfirm,
@@ -26,9 +31,12 @@ export default function SignupPage() {
 }
 
 function LoadingFallback() {
+  const { messages } = useLanguage();
   return (
     <main className="flex flex-1 items-center justify-center p-8">
-      <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Lädt…</p>
+      <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
+        {messages.common.loading}
+      </p>
     </main>
   );
 }
@@ -43,6 +51,8 @@ function SignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isLoading, isConfigured } = useAuth();
+  const { locale, messages } = useLanguage();
+  const { profile, isLoading: profileLoading } = useUserProfile();
 
   const nextPath = sanitizeInternalRedirect(searchParams.get("next"));
 
@@ -60,10 +70,9 @@ function SignupContent() {
   const alertRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!isLoading && user !== null && !submitted) {
-      router.replace("/account");
-    }
-  }, [isLoading, user, submitted, router]);
+    if (isLoading || user === null || submitted || profileLoading) return;
+    router.replace(resolvePostAuthDestination(profile, nextPath));
+  }, [isLoading, user, submitted, profileLoading, profile, router, nextPath]);
 
   if (!isConfigured) {
     return <AuthNotConfigured />;
@@ -74,28 +83,26 @@ function SignupContent() {
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <Card className="w-full max-w-md text-center">
           <h1 className="text-xl font-extrabold text-[var(--color-ink)]">
-            Fast geschafft!
+            {messages.auth.signupDoneTitle}
           </h1>
           <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
-            Wir haben eine E-Mail an die angegebene Adresse geschickt — sofern sie noch
-            nicht registriert war. Bitte öffne den Bestätigungslink, um dein Konto zu
-            aktivieren.
+            {messages.auth.signupDoneBody}
           </p>
           <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-            Bereits ein Konto? Dann kannst du dich einfach anmelden.
+            {messages.auth.signupDoneAlready}
           </p>
           <div className="mt-5 flex flex-col gap-3">
             <Link
               href="/login"
               className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 py-2.5 font-bold text-white hover:bg-[var(--color-primary-dark)]"
             >
-              Zur Anmeldung
+              {messages.auth.toLogin}
             </Link>
             <Link
               href="/"
               className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-[var(--color-secondary-border)] bg-[var(--color-secondary)] px-5 py-2.5 font-bold text-[var(--color-ink)] hover:bg-[var(--color-primary-soft)]"
             >
-              Weiter üben
+              {messages.auth.keepPracticing}
             </Link>
           </div>
         </Card>
@@ -107,9 +114,11 @@ function SignupContent() {
     event.preventDefault();
     if (pending) return;
 
-    const emailError = validateEmail(email);
-    const passwordError = validatePassword(password);
-    const confirmError = passwordError ? null : validatePasswordConfirm(password, confirm);
+    const emailError = validateEmail(email, locale);
+    const passwordError = validatePassword(password, locale);
+    const confirmError = passwordError
+      ? null
+      : validatePasswordConfirm(password, confirm, locale);
     if (emailError || passwordError || confirmError) {
       setFieldErrors({ email: emailError, password: passwordError, confirm: confirmError });
       setFormError(null);
@@ -145,14 +154,23 @@ function SignupContent() {
         setSubmitted(true);
         return;
       }
-      setFormError(mapAuthErrorToGerman(error));
+      setFormError(mapAuthError(error, locale));
       window.setTimeout(() => alertRef.current?.focus(), 0);
       return;
     }
 
-    // Email confirmation disabled in the project? Then a session exists right away.
+    // Email confirmation disabled in the project? Then a session exists right away
+    // — route through the same profile-completeness check as every other entry
+    // point (a brand-new account is always incomplete, so this reliably lands on
+    // /profile/setup, but the check stays generic rather than hardcoded).
     if (data.session !== null) {
-      router.push(nextPath);
+      let signedUpProfile: Awaited<ReturnType<typeof fetchOwnProfile>> = null;
+      try {
+        signedUpProfile = await fetchOwnProfile(client);
+      } catch {
+        signedUpProfile = null;
+      }
+      router.push(resolvePostAuthDestination(signedUpProfile, nextPath));
       router.refresh();
       return;
     }
@@ -164,12 +182,15 @@ function SignupContent() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md">
-        <h1 className="text-xl font-extrabold text-[var(--color-ink)]">
-          Kostenloses Konto erstellen
-        </h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-xl font-extrabold text-[var(--color-ink)]">
+            {messages.auth.signupTitle}
+          </h1>
+          <LanguageSwitcher variant="compact" />
+        </div>
         <ul className="mt-2 flex flex-col gap-1 text-sm text-[var(--color-ink-soft)]">
-          <li>Area 1 bleibt kostenlos.</li>
-          <li>Mit einem Konto kannst du deinen Fortschritt speichern.</li>
+          <li>{messages.auth.signupBenefit1}</li>
+          <li>{messages.auth.signupBenefit2}</li>
         </ul>
 
         <div className="mt-5">
@@ -180,7 +201,7 @@ function SignupContent() {
           <AuthFormField
             ref={emailRef}
             id="signup-email"
-            label="E-Mail-Adresse"
+            label={messages.auth.email}
             type="email"
             inputMode="email"
             value={email}
@@ -192,19 +213,19 @@ function SignupContent() {
           <AuthFormField
             ref={passwordRef}
             id="signup-password"
-            label="Passwort"
+            label={messages.auth.password}
             type="password"
             value={password}
             onChange={setPassword}
             autoComplete="new-password"
-            hint="Mindestens 8 Zeichen."
+            hint={messages.auth.passwordMinHint}
             error={fieldErrors.password}
             disabled={pending}
           />
           <AuthFormField
             ref={confirmRef}
             id="signup-password-confirm"
-            label="Passwort bestätigen"
+            label={messages.auth.passwordConfirm}
             type="password"
             value={confirm}
             onChange={setConfirm}
@@ -225,12 +246,12 @@ function SignupContent() {
           ) : null}
 
           <Button type="submit" variant="primary" disabled={pending} className="w-full">
-            {pending ? "Konto wird erstellt …" : "Kostenloses Konto erstellen"}
+            {pending ? messages.auth.signupPending : messages.auth.signupSubmit}
           </Button>
         </form>
 
         <p className="mt-5 text-sm text-[var(--color-ink-soft)]">
-          Bereits registriert?{" "}
+          {messages.auth.alreadyRegistered}{" "}
           <Link
             href={
               nextPath === "/account"
@@ -239,7 +260,7 @@ function SignupContent() {
             }
             className="font-semibold text-[var(--color-primary-dark)] hover:underline"
           >
-            Anmelden
+            {messages.auth.loginSubmit}
           </Link>
         </p>
       </Card>

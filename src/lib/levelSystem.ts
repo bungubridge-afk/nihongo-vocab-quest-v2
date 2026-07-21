@@ -1,5 +1,8 @@
 import type { CategoryId } from "@/types/learning";
 import { getQuestCategory } from "@/lib/questData";
+import type { AppLocale } from "@/i18n/types";
+import { getMessages } from "@/i18n/getMessages";
+import { localizeContent } from "@/i18n/localizeContent";
 
 const LEVEL_THRESHOLDS = [0, 50, 150, 280, 450];
 const EXTRA_XP_PER_LEVEL = 170;
@@ -89,14 +92,15 @@ export function getLevelProgress(xp: number): LevelProgress {
 const CATEGORY_ORDER: CategoryId[] = ["cafe", "reise", "schule", "freunde", "review"];
 
 /**
- * User-facing stage names. The internal ids and questData entries stay untouched;
- * only the label shown on the map/result changes ("Abschluss-Review" reads like an
- * internal name, the journey calls it "Finale Wiederholung").
+ * User-facing stage name in the current app language. The internal ids and questData
+ * entries stay untouched; only the shown label is localized — the review stage reads
+ * as "Final Review"/"Finale Wiederholung" (a journey name, not the internal
+ * "Abschluss-Review"), every other stage uses its localized category name.
  */
-export function getEtappeDisplayName(categoryId: CategoryId): string {
-  if (categoryId === "review") return "Finale Wiederholung";
+export function getEtappeDisplayName(categoryId: CategoryId, locale: AppLocale): string {
+  if (categoryId === "review") return getMessages(locale).quest.finaleName;
   const category = getQuestCategory(categoryId);
-  return category ? category.name : categoryId;
+  return category ? localizeContent(category.name, locale) : categoryId;
 }
 
 export function getInitialUnlockedCategories(): CategoryId[] {
@@ -126,11 +130,11 @@ export function getNextCategory(completed: CategoryId[]): CategoryId | null {
   return null;
 }
 
-export function getNextUnlockLabel(completed: CategoryId[]): string {
+export function getNextUnlockLabel(completed: CategoryId[], locale: AppLocale): string {
   const unlocked = getUnlockedCategoriesFromCompleted(completed);
   const next = CATEGORY_ORDER.find((id) => !unlocked.includes(id));
   if (!next) {
-    return "Alle Etappen freigeschaltet";
+    return getMessages(locale).quest.allStagesUnlocked;
   }
-  return getEtappeDisplayName(next);
+  return getEtappeDisplayName(next, locale);
 }

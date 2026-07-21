@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui";
+import { useLanguage } from "@/hooks/useLanguage";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { buildOAuthCallbackUrl } from "@/lib/auth/oauth";
-import { mapGoogleOAuthErrorToGerman } from "@/lib/auth/validation";
+import { mapGoogleOAuthError } from "@/lib/auth/validation";
 
 export interface GoogleAuthButtonProps {
   /** Sanitized internal path to return to after a successful sign-in. */
@@ -19,6 +20,7 @@ export interface GoogleAuthButtonProps {
  * with the email/password form on the same page.
  */
 export function GoogleAuthButton({ nextPath }: GoogleAuthButtonProps) {
+  const { locale, messages } = useLanguage();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +45,7 @@ export function GoogleAuthButton({ nextPath }: GoogleAuthButtonProps) {
 
     if (oauthError) {
       setPending(false);
-      setError(mapGoogleOAuthErrorToGerman(oauthError));
+      setError(mapGoogleOAuthError(oauthError, locale));
       return;
     }
 
@@ -65,7 +67,7 @@ export function GoogleAuthButton({ nextPath }: GoogleAuthButtonProps) {
         ) : (
           <GoogleGlyphIcon className="h-5 w-5 shrink-0" />
         )}
-        {pending ? "Wird geöffnet …" : "Mit Google fortfahren"}
+        {pending ? messages.auth.googleOpening : messages.auth.continueWithGoogle}
       </Button>
       {error ? (
         <p role="alert" className="text-sm font-semibold break-words text-[var(--color-danger)]">

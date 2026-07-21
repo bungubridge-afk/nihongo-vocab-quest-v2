@@ -2,11 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Badge, Button, Card } from "@/components/ui";
 import { AuthNotConfigured } from "@/components/auth/AuthNotConfigured";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
+import { useRequireCompleteProfile } from "@/hooks/useUserProfile";
 import { useEntitlements } from "@/components/providers/EntitlementProvider";
 import { useProgressSync } from "@/components/providers/ProgressProvider";
+import { formatMessage } from "@/i18n/getMessages";
+import { formatUsername, isProfileComplete } from "@/lib/profile/profileValidation";
 import {
   getCollectedCards,
   getCompletedCategories,
@@ -14,13 +20,6 @@ import {
   getXP,
 } from "@/lib/storage";
 import type { SyncStatus } from "@/types/auth";
-
-const SYNC_STATUS_LABEL: Record<SyncStatus, string> = {
-  local: "Nur auf diesem Gerät",
-  syncing: "Wird synchronisiert …",
-  synced: "Synchronisiert",
-  error: "Synchronisierung fehlgeschlagen",
-};
 
 const SYNC_STATUS_BADGE: Record<SyncStatus, "gray" | "blue" | "green" | "yellow"> = {
   local: "gray",
@@ -36,19 +35,11 @@ interface ProgressSummary {
   completed: number;
 }
 
-function formatSyncTime(iso: string | null): string | null {
-  if (iso === null) return null;
-  const time = Date.parse(iso);
-  if (Number.isNaN(time)) return null;
-  return new Intl.DateTimeFormat("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(time));
-}
-
 export default function AccountPage() {
   const router = useRouter();
   const { user, isLoading, isConfigured, signOut } = useAuth();
+  const { locale, messages } = useLanguage();
+  const { profile, isLoading: profileLoading } = useRequireCompleteProfile();
   const { isPremium, isLoading: entitlementsLoading } = useEntitlements();
   const {
     syncStatus,
@@ -86,15 +77,27 @@ export default function AccountPage() {
     return <AuthNotConfigured />;
   }
 
-  if (isLoading || user === null || summary === null) {
+  // Also waits on the profile guard: renders nothing of the account content until
+  // we know the profile is loaded AND complete, so an incomplete-profile user never
+  // sees a flash of "Free"/progress before useRequireCompleteProfile redirects them.
+  if (
+    isLoading ||
+    user === null ||
+    summary === null ||
+    profileLoading ||
+    profile === null ||
+    !isProfileComplete(profile)
+  ) {
     return (
       <main className="flex flex-1 items-center justify-center p-8">
-        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Lädt…</p>
+        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
+          {messages.common.loading}
+        </p>
       </main>
     );
   }
 
-  const syncTimeLabel = formatSyncTime(lastSyncedAt);
+  const syncTimeLabel = formatSyncTime(lastSyncedAt, locale);
 
   async function handleSyncNow() {
     if (busy !== null) return;
@@ -108,10 +111,7 @@ export default function AccountPage() {
 
   async function handleImport() {
     if (busy !== null) return;
-    const confirmed = window.confirm(
-      "Lokalen Fortschritt in dieses Konto übernehmen?\n\n" +
-        "Dein Konto-Fortschritt bleibt erhalten: XP, Karten und Etappen werden zusammengeführt, nichts wird gelöscht."
-    );
+    const confirmed = window.confirm(messages.account.importConfirm);
     if (!confirmed) return;
     setBusy("import");
     try {
@@ -138,77 +138,102 @@ export default function AccountPage() {
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
         <div>
           <h1 className="text-2xl font-extrabold text-[var(--color-ink)] sm:text-3xl">
-            Konto
+            {messages.account.title}
           </h1>
         </div>
 
         <Card variant="default">
           <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-            E-Mail-Adresse
+            {messages.account.profileLabel}
+          </p>
+          <p className="mt-1 font-semibold break-words text-[var(--color-ink)]">
+            {profile.displayName ?? ""}
+          </p>
+          <p className="text-sm break-words text-[var(--color-ink-soft)]">
+            {profile.username ? formatUsername(profile.username) : ""}
+          </p>
+          <div className="mt-3">
+            <Link
+              href="/profile/edit"
+              className="inline-flex min-h-11 items-center rounded-xl border border-[var(--color-secondary-border)] bg-[var(--color-secondary)] px-3 text-sm font-bold text-[var(--color-ink)] hover:bg-[var(--color-primary-soft)]"
+            >
+              {messages.account.editProfile}
+            </Link>
+          </div>
+        </Card>
+
+        <Card variant="default">
+          <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
+            {messages.account.emailLabel}
           </p>
           <p className="mt-1 font-semibold break-all text-[var(--color-ink)]">
             {user.email ?? "—"}
           </p>
 
           <p className="mt-4 text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-            Tarif
+            {messages.account.planLabel}
           </p>
           <div className="mt-1">
             {entitlementsLoading ? (
-              <Badge variant="gray">Wird geprüft …</Badge>
+              <Badge variant="gray">{messages.account.planChecking}</Badge>
             ) : isPremium ? (
-              <Badge variant="yellow">Premium</Badge>
+              <Badge variant="yellow">{messages.account.planPremium}</Badge>
             ) : (
-              <Badge variant="gray">Kostenlos</Badge>
+              <Badge variant="gray">{messages.account.planFree}</Badge>
             )}
           </div>
         </Card>
 
         <Card variant="default">
-          <p className="font-bold text-[var(--color-ink)]">Gespeicherter Fortschritt</p>
+          <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
+            {messages.account.languageLabel}
+          </p>
+          <div className="mt-2">
+            <LanguageSwitcher variant="full" />
+          </div>
+        </Card>
+
+        <Card variant="default">
+          <p className="font-bold text-[var(--color-ink)]">{messages.account.savedProgress}</p>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div>
               <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-                XP
+                {messages.account.xp}
               </p>
               <p className="text-lg font-extrabold text-[var(--color-ink)]">{summary.xp}</p>
             </div>
             <div>
               <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-                Level
+                {messages.account.level}
               </p>
-              <p className="text-lg font-extrabold text-[var(--color-ink)]">
-                {summary.level}
-              </p>
+              <p className="text-lg font-extrabold text-[var(--color-ink)]">{summary.level}</p>
             </div>
             <div>
               <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-                Karten
+                {messages.account.cards}
               </p>
-              <p className="text-lg font-extrabold text-[var(--color-ink)]">
-                {summary.cards}
-              </p>
+              <p className="text-lg font-extrabold text-[var(--color-ink)]">{summary.cards}</p>
             </div>
             <div>
               <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-                Etappen
+                {messages.account.stages}
               </p>
               <p className="text-lg font-extrabold text-[var(--color-ink)]">
-                {summary.completed} / 5
+                {formatMessage(messages.account.stagesValue, { done: summary.completed })}
               </p>
             </div>
           </div>
         </Card>
 
         <Card variant="default">
-          <p className="font-bold text-[var(--color-ink)]">Synchronisierung</p>
+          <p className="font-bold text-[var(--color-ink)]">{messages.account.sync}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant={SYNC_STATUS_BADGE[syncStatus]}>
-              {SYNC_STATUS_LABEL[syncStatus]}
+              {messages.account.syncStatus[syncStatus]}
             </Badge>
             {syncTimeLabel ? (
               <span className="text-sm text-[var(--color-ink-soft)]">
-                Zuletzt: {syncTimeLabel}
+                {formatMessage(messages.account.lastSynced, { time: syncTimeLabel })}
               </span>
             ) : null}
           </div>
@@ -219,7 +244,7 @@ export default function AccountPage() {
               onClick={handleSyncNow}
               disabled={busy !== null || syncStatus === "syncing"}
             >
-              {syncStatus === "error" ? "Erneut versuchen" : "Jetzt synchronisieren"}
+              {syncStatus === "error" ? messages.account.syncRetry : messages.account.syncNow}
             </Button>
           </div>
         </Card>
@@ -227,12 +252,10 @@ export default function AccountPage() {
         {canImportLocalProgress ? (
           <Card variant="soft">
             <p className="font-bold text-[var(--color-ink)]">
-              Lokaler Fortschritt gefunden
+              {messages.account.localProgressFoundTitle}
             </p>
             <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-              Auf diesem Gerät gibt es Fortschritt, der noch keinem Konto zugeordnet
-              ist. Du kannst ihn mit deinem Konto zusammenführen — dabei geht nichts
-              verloren.
+              {messages.account.localProgressFoundBody}
             </p>
             <div className="mt-3">
               <Button
@@ -241,9 +264,7 @@ export default function AccountPage() {
                 onClick={handleImport}
                 disabled={busy !== null}
               >
-                {busy === "import"
-                  ? "Wird übernommen …"
-                  : "Lokalen Fortschritt importieren"}
+                {busy === "import" ? messages.account.importing : messages.account.importLocal}
               </Button>
             </div>
           </Card>
@@ -256,10 +277,23 @@ export default function AccountPage() {
             disabled={busy !== null}
             className="text-[var(--color-danger)]"
           >
-            {busy === "signout" ? "Wird abgemeldet …" : "Abmelden"}
+            {busy === "signout" ? messages.account.signingOut : messages.account.signOut}
           </Button>
         </div>
       </div>
     </main>
   );
+}
+
+/** Localized last-synced timestamp. Uses the app locale's regional format (en-GB
+ *  keeps day/month order familiar to English users; de-DE for German). */
+function formatSyncTime(iso: string | null, locale: "en" | "de"): string | null {
+  if (iso === null) return null;
+  const time = Date.parse(iso);
+  if (Number.isNaN(time)) return null;
+  const intlLocale = locale === "de" ? "de-DE" : "en-GB";
+  return new Intl.DateTimeFormat(intlLocale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(time));
 }

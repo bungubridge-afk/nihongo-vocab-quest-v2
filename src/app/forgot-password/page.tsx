@@ -6,11 +6,13 @@ import { Button, Card } from "@/components/ui";
 import { AuthFormField } from "@/components/auth/AuthFormField";
 import { AuthNotConfigured } from "@/components/auth/AuthNotConfigured";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { mapAuthErrorToGerman, validateEmail } from "@/lib/auth/validation";
+import { mapAuthError, validateEmail } from "@/lib/auth/validation";
 
 export default function ForgotPasswordPage() {
   const { isConfigured } = useAuth();
+  const { locale, messages } = useLanguage();
 
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -30,18 +32,17 @@ export default function ForgotPasswordPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <Card className="w-full max-w-md text-center">
           <h1 className="text-xl font-extrabold text-[var(--color-ink)]">
-            E-Mail unterwegs
+            {messages.auth.forgotDoneTitle}
           </h1>
           <p className="mt-3 text-sm break-words text-[var(--color-ink-soft)]">
-            Wenn ein Konto mit dieser E-Mail-Adresse existiert, haben wir dir einen Link
-            zum Zurücksetzen des Passworts geschickt.
+            {messages.auth.forgotDoneBody}
           </p>
           <div className="mt-5">
             <Link
               href="/login"
               className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 py-2.5 font-bold text-white hover:bg-[var(--color-primary-dark)]"
             >
-              Zur Anmeldung
+              {messages.auth.toLogin}
             </Link>
           </div>
         </Card>
@@ -53,7 +54,7 @@ export default function ForgotPasswordPage() {
     event.preventDefault();
     if (pending) return;
 
-    const validationError = validateEmail(email);
+    const validationError = validateEmail(email, locale);
     if (validationError) {
       setEmailError(validationError);
       emailRef.current?.focus();
@@ -78,8 +79,11 @@ export default function ForgotPasswordPage() {
 
     // Rate limits surface as real errors; everything else shows the same neutral
     // success view so the form never reveals whether an address is registered.
-    if (error && (error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit")) {
-      setFormError(mapAuthErrorToGerman(error));
+    if (
+      error &&
+      (error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit")
+    ) {
+      setFormError(mapAuthError(error, locale));
       window.setTimeout(() => alertRef.current?.focus(), 0);
       return;
     }
@@ -91,17 +95,17 @@ export default function ForgotPasswordPage() {
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md">
         <h1 className="text-xl font-extrabold text-[var(--color-ink)]">
-          Passwort zurücksetzen
+          {messages.auth.forgotTitle}
         </h1>
         <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-          Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link zum Zurücksetzen.
+          {messages.auth.forgotSubtitle}
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="mt-5 flex flex-col gap-4">
           <AuthFormField
             ref={emailRef}
             id="forgot-email"
-            label="E-Mail-Adresse"
+            label={messages.auth.email}
             type="email"
             inputMode="email"
             value={email}
@@ -123,17 +127,17 @@ export default function ForgotPasswordPage() {
           ) : null}
 
           <Button type="submit" variant="primary" disabled={pending} className="w-full">
-            {pending ? "Wird gesendet …" : "Link zum Zurücksetzen senden"}
+            {pending ? messages.auth.forgotPending : messages.auth.forgotSubmit}
           </Button>
         </form>
 
         <p className="mt-5 text-sm text-[var(--color-ink-soft)]">
-          Doch wieder eingefallen?{" "}
+          {messages.auth.forgotRemembered}{" "}
           <Link
             href="/login"
             className="font-semibold text-[var(--color-primary-dark)] hover:underline"
           >
-            Anmelden
+            {messages.auth.loginSubmit}
           </Link>
         </p>
       </Card>

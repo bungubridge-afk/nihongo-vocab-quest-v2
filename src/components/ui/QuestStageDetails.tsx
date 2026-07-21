@@ -1,10 +1,15 @@
+"use client";
+
 import type { CSSProperties } from "react";
 import { Badge } from "@/components/ui/Badge";
 import type { BadgeVariant } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { StageIcon } from "@/components/ui/QuestNode";
+import { StageIcon, questStatusLabel } from "@/components/ui/QuestNode";
 import type { QuestNodeStatus, QuestStageIcon } from "@/components/ui/QuestNode";
+import { useLanguage } from "@/hooks/useLanguage";
+import { localizeContent } from "@/i18n/localizeContent";
+import { formatMessage } from "@/i18n/getMessages";
 import type { QuestCategory } from "@/types/learning";
 
 export interface QuestStageDetailsProps {
@@ -21,14 +26,6 @@ export interface QuestStageDetailsProps {
   /** Present only when the stage can actually be started (i.e. not locked). */
   onStart?: () => void;
 }
-
-const STATUS_LABEL: Record<QuestNodeStatus, string> = {
-  current: "Bereit",
-  completed: "Abgeschlossen",
-  unlocked: "Bereit",
-  locked: "Gesperrt",
-  review: "Bereit",
-};
 
 const STATUS_BADGE_VARIANT: Record<QuestNodeStatus, BadgeVariant> = {
   current: "green",
@@ -63,9 +60,10 @@ export function QuestStageDetails({
   isFinale = false,
   onStart,
 }: QuestStageDetailsProps) {
+  const { locale, messages } = useLanguage();
   const isLocked = status === "locked";
   const isCompleted = status === "completed";
-  const description = flavorText ?? category.description;
+  const description = localizeContent(flavorText ?? category.description, locale);
 
   return (
     <Card variant={isFinale && !isLocked ? "highlight" : "default"}>
@@ -83,10 +81,12 @@ export function QuestStageDetails({
         </span>
         <div className="min-w-0">
           <p className="font-bold text-[var(--color-ink)]">{displayName}</p>
-          <p className="text-xs text-[var(--color-ink-soft)]">{category.stageTitle}</p>
+          <p className="text-xs text-[var(--color-ink-soft)]">
+            {localizeContent(category.stageTitle, locale)}
+          </p>
         </div>
         <Badge variant={STATUS_BADGE_VARIANT[status]} className="ml-auto shrink-0">
-          {STATUS_LABEL[status]}
+          {questStatusLabel(status, messages)}
         </Badge>
       </div>
 
@@ -95,19 +95,21 @@ export function QuestStageDetails({
       {learningSummary ? (
         <div className="mt-2.5 rounded-xl bg-[var(--color-primary-soft)] px-2.5 py-2">
           <p className="text-[11px] font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
-            Was du lernst
+            {messages.quest.whatYouLearn}
           </p>
-          <p className="mt-0.5 text-xs text-[var(--color-ink)]">{learningSummary}</p>
+          <p className="mt-0.5 text-xs text-[var(--color-ink)]">
+            {localizeContent(learningSummary, locale)}
+          </p>
         </div>
       ) : null}
 
       {isLocked ? (
         <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
-          Schließe zuerst die vorherige Etappe ab.
+          {messages.quest.finishPreviousStage}
         </p>
       ) : (
         <Button variant="primary" onClick={onStart} className="mt-3 w-full">
-          {isCompleted ? "Wiederholen" : "Starten"}
+          {isCompleted ? messages.quest.repeat : messages.quest.start}
         </Button>
       )}
     </Card>
@@ -146,6 +148,7 @@ export function QuestStageCompactCard({
   onStart,
   style,
 }: QuestStageCompactCardProps) {
+  const { locale, messages } = useLanguage();
   const isLocked = status === "locked";
   const isCompleted = status === "completed";
   const isCurrent = status === "current";
@@ -179,13 +182,16 @@ export function QuestStageCompactCard({
           .filter(Boolean)
           .join(" ")}
       >
-        {description}
+        {localizeContent(description, locale)}
       </p>
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        <Badge variant={STATUS_BADGE_VARIANT[status]}>{STATUS_LABEL[status]}</Badge>
+        <Badge variant={STATUS_BADGE_VARIANT[status]}>{questStatusLabel(status, messages)}</Badge>
         {!isLocked ? (
           <span className="text-[11px] font-semibold text-[var(--color-ink-soft)]">
-            +{rewardXp} XP{cardCount > 0 ? ` · ${cardCount} Karten` : ""}
+            +{rewardXp} XP
+            {cardCount > 0
+              ? ` · ${formatMessage(messages.quest.cardCount, { count: cardCount })}`
+              : ""}
           </span>
         ) : null}
       </div>
@@ -196,7 +202,7 @@ export function QuestStageCompactCard({
           onClick={onStart}
           className="mt-2 w-full"
         >
-          {isCompleted ? "Wiederholen" : "Starten"}
+          {isCompleted ? messages.quest.repeat : messages.quest.start}
         </Button>
       ) : null}
     </div>

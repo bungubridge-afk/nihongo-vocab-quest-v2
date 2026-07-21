@@ -74,10 +74,18 @@ export interface VocabularySearchFields {
  * doesn't depend on any search query, so it's safe — and, for large word lists,
  * recommended — to compute once per word (e.g. in a `useMemo` keyed on the word list)
  * and reuse across every keystroke, rather than rebuilding it on every render.
+ *
+ * `germanText` is the ALREADY-localized meaning in the current app language: an
+ * English learner searches only Japanese + English meaning, a German learner only
+ * Japanese + German meaning. The caller localizes it (see `buildVocabularySearchIndex`)
+ * so this module stays free of any i18n dependency.
  */
-export function buildVocabularySearchHaystack(item: VocabularySearchFields): string {
+export function buildVocabularySearchHaystack(
+  item: VocabularySearchFields,
+  germanText: string = item.german
+): string {
   return normalizeVocabularySearchText(
-    [item.kanji, item.kana, item.romaji ?? "", item.german].join(" ")
+    [item.kanji, item.kana, item.romaji ?? "", germanText].join(" ")
   );
 }
 
@@ -97,12 +105,16 @@ export function buildVocabularySearchHaystack(item: VocabularySearchFields): str
  */
 export function buildVocabularySearchIndex<T extends VocabularySearchFields & { id: string }>(
   items: readonly T[],
-  shouldIndex: (item: T) => boolean
+  shouldIndex: (item: T) => boolean,
+  localizeGerman: (item: T) => string = (item) => item.german
 ): Map<string, string> {
   const index = new Map<string, string>();
   for (const item of items) {
     if (!shouldIndex(item)) continue;
-    index.set(item.id, buildVocabularySearchHaystack(item));
+    // `localizeGerman` is invoked only AFTER the item passed `shouldIndex`, so a hidden
+    // card's meaning is never localized or read into the index — the collection-privacy
+    // invariant (hidden text never enters the search index) still holds per locale.
+    index.set(item.id, buildVocabularySearchHaystack(item, localizeGerman(item)));
   }
   return index;
 }

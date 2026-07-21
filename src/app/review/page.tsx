@@ -3,11 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Card, ProgressPill } from "@/components/ui";
+import { useLanguage } from "@/hooks/useLanguage";
+import { localizeContent } from "@/i18n/localizeContent";
 import { getVocabById } from "@/lib/vocabData";
 import { getKnownWords, getWeakWords } from "@/lib/storage";
 import type { CategoryId, VocabItem } from "@/types/learning";
 
-const CATEGORY_LABELS: Record<CategoryId, string> = {
+/** Category display names for the review cards. cafe/reise/… ids map to the same
+ *  localized category names used everywhere; "review" isn't shown here. */
+const CATEGORY_LABEL_KEY: Record<CategoryId, string> = {
   cafe: "Café",
   reise: "Reise",
   schule: "Schule",
@@ -42,6 +46,7 @@ const INITIAL_STATE: PageState = { mounted: false, data: null };
 
 export default function ReviewPage() {
   const router = useRouter();
+  const { locale, messages } = useLanguage();
   const [state, setState] = useState<PageState>(INITIAL_STATE);
 
   useEffect(() => {
@@ -54,7 +59,9 @@ export default function ReviewPage() {
   if (!state.mounted || !state.data) {
     return (
       <main className="flex flex-1 items-center justify-center p-8">
-        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Lädt…</p>
+        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
+          {messages.common.loading}
+        </p>
       </main>
     );
   }
@@ -67,39 +74,35 @@ export default function ReviewPage() {
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
-            Zur Karte
+            {messages.vocabulary.toMap}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => router.push("/vocabulary")}>
-            Zur Wortkarten-Sammlung
+            {messages.review.toCollection}
           </Button>
         </div>
 
         <div>
           <h1 className="text-2xl font-extrabold text-[var(--color-ink)] sm:text-3xl">
-            Wiederholung
+            {messages.review.title}
           </h1>
-          <p className="mt-1 text-[var(--color-ink-soft)]">
-            Übe Karten, die dir noch schwerfallen.
-          </p>
+          <p className="mt-1 text-[var(--color-ink-soft)]">{messages.review.subtitle}</p>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <ProgressPill label="Zu üben" value={weakVocab.length} variant="xp" />
-          <ProgressPill label="Sicher" value={knownVocab.length} variant="level" />
+          <ProgressPill label={messages.review.toPractice} value={weakVocab.length} variant="xp" />
+          <ProgressPill label={messages.review.secure} value={knownVocab.length} variant="level" />
         </div>
 
         {weakVocab.length === 0 ? (
           <Card variant="default" className="text-center">
-            <p className="font-bold text-[var(--color-ink)]">Noch keine schwachen Wörter.</p>
-            <p className="mt-2 text-sm text-[var(--color-ink-soft)]">
-              Mache ein Quiz oder übe einzelne Karten, damit deine Wiederholungsliste wächst.
-            </p>
+            <p className="font-bold text-[var(--color-ink)]">{messages.review.noWeakTitle}</p>
+            <p className="mt-2 text-sm text-[var(--color-ink-soft)]">{messages.review.noWeakBody}</p>
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Button variant="primary" onClick={() => router.push("/vocabulary")}>
-                Zur Wortkarten-Sammlung
+                {messages.review.toCollection}
               </Button>
               <Button variant="secondary" onClick={() => router.push("/")}>
-                Zur Karte
+                {messages.vocabulary.toMap}
               </Button>
             </div>
           </Card>
@@ -108,18 +111,22 @@ export default function ReviewPage() {
             {weakVocab.map((vocab) => (
               <Card key={vocab.id} variant="default" className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="yellow">Üben</Badge>
-                  <Badge variant="gray">{CATEGORY_LABELS[vocab.categoryId]}</Badge>
+                  <Badge variant="yellow">{messages.review.practiceBadge}</Badge>
+                  <Badge variant="gray">
+                    {localizeContent(CATEGORY_LABEL_KEY[vocab.categoryId], locale)}
+                  </Badge>
                 </div>
 
                 <div>
                   <p className="text-2xl font-extrabold text-[var(--color-ink)]">{vocab.kanji}</p>
                   <p className="text-sm text-[var(--color-ink-soft)]">
-                    {vocab.kana} · {vocab.romaji} · {vocab.german}
+                    {vocab.kana} · {vocab.romaji} · {localizeContent(vocab.german, locale)}
                   </p>
                 </div>
 
-                <p className="text-sm text-[var(--color-ink)]">{vocab.shortTip}</p>
+                <p className="text-sm text-[var(--color-ink)]">
+                  {localizeContent(vocab.shortTip, locale)}
+                </p>
 
                 <Button
                   variant="primary"
@@ -127,7 +134,7 @@ export default function ReviewPage() {
                   onClick={() => router.push(`/practice?word=${vocab.id}`)}
                   className="mt-auto w-full"
                 >
-                  Karte üben
+                  {messages.review.practiceCard}
                 </Button>
               </Card>
             ))}
@@ -137,12 +144,12 @@ export default function ReviewPage() {
         {knownVocab.length > 0 ? (
           <div>
             <p className="text-xs font-semibold tracking-wide text-[var(--color-ink-soft)] uppercase">
-              Schon sicher
+              {messages.review.alreadySecure}
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {knownVocab.map((vocab) => (
                 <Badge key={vocab.id} variant="green">
-                  {vocab.kanji} · {vocab.german}
+                  {vocab.kanji} · {localizeContent(vocab.german, locale)}
                 </Badge>
               ))}
             </div>

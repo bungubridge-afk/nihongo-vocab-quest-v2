@@ -6,9 +6,10 @@ import { Button, Card } from "@/components/ui";
 import { AuthFormField } from "@/components/auth/AuthFormField";
 import { AuthNotConfigured } from "@/components/auth/AuthNotConfigured";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
-  mapAuthErrorToGerman,
+  mapAuthError,
   validatePassword,
   validatePasswordConfirm,
 } from "@/lib/auth/validation";
@@ -25,6 +26,7 @@ interface FieldErrors {
  */
 export default function ResetPasswordPage() {
   const { user, isLoading, isConfigured } = useAuth();
+  const { locale, messages } = useLanguage();
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -44,7 +46,9 @@ export default function ResetPasswordPage() {
   if (isLoading) {
     return (
       <main className="flex flex-1 items-center justify-center p-8">
-        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Lädt…</p>
+        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
+          {messages.common.loading}
+        </p>
       </main>
     );
   }
@@ -54,18 +58,17 @@ export default function ResetPasswordPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <Card className="w-full max-w-md text-center">
           <h1 className="text-xl font-extrabold text-[var(--color-ink)]">
-            Link abgelaufen
+            {messages.auth.resetExpiredTitle}
           </h1>
           <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
-            Dieser Link zum Zurücksetzen ist abgelaufen oder ungültig. Bitte fordere
-            einen neuen an.
+            {messages.auth.resetExpiredBody}
           </p>
           <div className="mt-5">
             <Link
               href="/forgot-password"
               className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 py-2.5 font-bold text-white hover:bg-[var(--color-primary-dark)]"
             >
-              Neuen Link anfordern
+              {messages.auth.resetRequestNew}
             </Link>
           </div>
         </Card>
@@ -78,17 +81,17 @@ export default function ResetPasswordPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-10">
         <Card className="w-full max-w-md text-center">
           <h1 className="text-xl font-extrabold text-[var(--color-ink)]">
-            Passwort aktualisiert
+            {messages.auth.resetDoneTitle}
           </h1>
           <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
-            Dein neues Passwort ist gespeichert. Du bist weiterhin angemeldet.
+            {messages.auth.resetDoneBody}
           </p>
           <div className="mt-5">
             <Link
               href="/account"
               className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 py-2.5 font-bold text-white hover:bg-[var(--color-primary-dark)]"
             >
-              Zum Konto
+              {messages.auth.toAccount}
             </Link>
           </div>
         </Card>
@@ -100,8 +103,10 @@ export default function ResetPasswordPage() {
     event.preventDefault();
     if (pending) return;
 
-    const passwordError = validatePassword(password);
-    const confirmError = passwordError ? null : validatePasswordConfirm(password, confirm);
+    const passwordError = validatePassword(password, locale);
+    const confirmError = passwordError
+      ? null
+      : validatePasswordConfirm(password, confirm, locale);
     if (passwordError || confirmError) {
       setFieldErrors({ password: passwordError, confirm: confirmError });
       setFormError(null);
@@ -124,7 +129,7 @@ export default function ResetPasswordPage() {
 
     setPending(false);
     if (error) {
-      setFormError(mapAuthErrorToGerman(error));
+      setFormError(mapAuthError(error, locale));
       window.setTimeout(() => alertRef.current?.focus(), 0);
       return;
     }
@@ -136,26 +141,26 @@ export default function ResetPasswordPage() {
     <main className="flex flex-1 items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md">
         <h1 className="text-xl font-extrabold text-[var(--color-ink)]">
-          Neues Passwort festlegen
+          {messages.auth.resetTitle}
         </h1>
 
         <form onSubmit={handleSubmit} noValidate className="mt-5 flex flex-col gap-4">
           <AuthFormField
             ref={passwordRef}
             id="reset-password"
-            label="Neues Passwort"
+            label={messages.auth.resetNewPassword}
             type="password"
             value={password}
             onChange={setPassword}
             autoComplete="new-password"
-            hint="Mindestens 8 Zeichen."
+            hint={messages.auth.passwordMinHint}
             error={fieldErrors.password}
             disabled={pending}
           />
           <AuthFormField
             ref={confirmRef}
             id="reset-password-confirm"
-            label="Passwort bestätigen"
+            label={messages.auth.passwordConfirm}
             type="password"
             value={confirm}
             onChange={setConfirm}
@@ -176,7 +181,7 @@ export default function ResetPasswordPage() {
           ) : null}
 
           <Button type="submit" variant="primary" disabled={pending} className="w-full">
-            {pending ? "Wird gespeichert …" : "Passwort aktualisieren"}
+            {pending ? messages.common.saving : messages.auth.resetSubmit}
           </Button>
         </form>
       </Card>

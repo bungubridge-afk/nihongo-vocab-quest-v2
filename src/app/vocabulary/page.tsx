@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Card, UsageExampleComparison } from "@/components/ui";
+import { useLanguage } from "@/hooks/useLanguage";
+import { localizeContent } from "@/i18n/localizeContent";
+import { formatMessage, type Messages } from "@/i18n/getMessages";
 import { vocabData } from "@/lib/vocabData";
 import { speakJapanese } from "@/lib/speech";
-import { getRegisterLabel } from "@/lib/registerData";
 import {
   buildCategoryCollectionView,
   formatCollectionNumber,
@@ -25,10 +27,7 @@ import {
   normalizeVocabularySearchText,
 } from "@/lib/vocabularySearch";
 import { getCardStatus, getZukanStatus, isHiddenStatus } from "@/lib/zukanStatus";
-import {
-  CULTURE_NOTE_TYPE_LABEL,
-  getCultureNote,
-} from "@/lib/vocabularyCultureData";
+import { getCultureNote } from "@/lib/vocabularyCultureData";
 import {
   getCollectedCards,
   getCompletedCategories,
@@ -48,50 +47,31 @@ import type {
 
 const VOCAB_CATEGORY_ORDER: CategoryId[] = ["cafe", "reise", "schule", "freunde"];
 
-const CATEGORY_FILTERS: { id: CategoryId | "all"; label: string }[] = [
-  { id: "all", label: "Alle" },
-  { id: "cafe", label: "Café" },
-  { id: "reise", label: "Reise" },
-  { id: "schule", label: "Schule" },
-  { id: "freunde", label: "Freunde" },
+/** Category filter chips — the German category name is a dictionary key, localized
+ *  for display; "all" uses the catalog's filterAll label. */
+const CATEGORY_FILTER_IDS: (CategoryId | "all")[] = [
+  "all",
+  "cafe",
+  "reise",
+  "schule",
+  "freunde",
 ];
+const CATEGORY_FILTER_LABEL: Record<CategoryId, string> = {
+  cafe: "Café",
+  reise: "Reise",
+  schule: "Schule",
+  freunde: "Freunde",
+  review: "Review",
+};
 
 type RegisterFilter = "all" | "casual" | "polite";
 
-const REGISTER_FILTERS: { id: RegisterFilter; label: string }[] = [
-  { id: "all", label: "Alle" },
-  { id: "casual", label: getRegisterLabel("casual") },
-  { id: "polite", label: getRegisterLabel("polite") },
-];
-
-/** True if this word has at least one register-tagged usage example matching `register`
- *  — words without `usageExamples` (Café/Reise, as of this pass) never match casual/polite. */
+/** True if this word has at least one register-tagged usage example matching `register`. */
 function hasRegisterExample(vocab: VocabItem, register: SpeechRegister): boolean {
   return (vocab.usageExamples ?? []).some((example) => example.register === register);
 }
 
-// ---------------------------------------------------------------------------
-// Zukan status: the four learner-facing collection states. Mapped from the
-// existing CardStatus values — progress data and practice logic are unchanged,
-// only the display vocabulary is new.
-// ---------------------------------------------------------------------------
-
-const ZUKAN_STATUS_LABEL: Record<ZukanStatus, string> = {
-  unentdeckt: "Unentdeckt",
-  entdeckt: "Entdeckt",
-  training: "Im Training",
-  vertraut: "Vertraut",
-};
-
-/** Phase-19 copy — matches the real transitions in storage/practice exactly:
- *  quest completion collects cards; a practice run with mistakes adds the word to
- *  weakWords ("Im Training"); a fully correct run adds it to knownWords ("Vertraut"). */
-const ZUKAN_STATUS_DESCRIPTION: Record<ZukanStatus, string> = {
-  unentdeckt: "Noch nicht in einer Quest gesammelt.",
-  entdeckt: "Gesammelt, aber noch nicht als sicher gelernt markiert.",
-  training: "Dieses Wort solltest du noch einmal üben.",
-  vertraut: "Dieses Wort hast du in der Übung sicher beantwortet.",
-};
+const ZUKAN_STATUS_ORDER: ZukanStatus[] = ["unentdeckt", "entdeckt", "training", "vertraut"];
 
 interface ProgressSnapshot {
   collectedCards: string[];
@@ -111,9 +91,11 @@ function loadProgress(): ProgressSnapshot {
   };
 }
 
-/** "0 Wortkarten" / "1 Wortkarte" / "10 Wortkarten" — German singular/plural. */
-function formatResultCount(count: number): string {
-  return count === 1 ? "1 Wortkarte" : `${count} Wortkarten`;
+/** Localized "N word card(s)" count, choosing the singular/plural catalog key. */
+function formatResultCount(count: number, messages: Messages): string {
+  return count === 1
+    ? messages.vocabulary.resultOne
+    : formatMessage(messages.vocabulary.resultMany, { count });
 }
 
 interface PageState {
@@ -125,6 +107,7 @@ const INITIAL_STATE: PageState = { mounted: false, progress: null };
 
 export default function VocabularyPage() {
   const router = useRouter();
+  const { locale, messages } = useLanguage();
   const [state, setState] = useState<PageState>(INITIAL_STATE);
   const [categoryFilter, setCategoryFilter] = useState<CategoryId | "all">("all");
   const [registerFilter, setRegisterFilter] = useState<RegisterFilter>("all");
@@ -134,19 +117,20 @@ export default function VocabularyPage() {
   const dialogTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   // Search index (word id → normalized haystack), built ONLY for cards the player has
-  // actually discovered. An undiscovered/locked card's kanji/kana/romaji/German is never
-  // read here — its hidden content never enters the index in the first place. The
-  // predicate decides eligibility from collection status alone (getCardStatus reads only
-  // id/categoryId), so no hidden text field is touched to build the index. Zukan
-  // metadata (dex descriptions etc.) is deliberately NOT part of the haystack.
+  // actually discovered. An undiscovered/locked card's kanji/kana/romaji/meaning is never
+  // read here — its hidden content never enters the index in the first place. The meaning
+  // is localized to the current language (localizeContent) INSIDE the index builder, only
+  // after the discovery predicate passes, so an English learner searches English meanings,
+  // a German learner searches German meanings, and no hidden text is read either way.
   const searchHaystacks = useMemo(() => {
     const currentProgress = state.progress;
     if (!currentProgress) return new Map<string, string>();
     return buildVocabularySearchIndex(
       vocabData,
-      (vocab) => !isHiddenStatus(getCardStatus(vocab, currentProgress))
+      (vocab) => !isHiddenStatus(getCardStatus(vocab, currentProgress)),
+      (vocab) => localizeContent(vocab.german, locale)
     );
-  }, [state.progress]);
+  }, [state.progress, locale]);
 
   const normalizedQuery = useMemo(() => normalizeVocabularySearchText(query), [query]);
 
@@ -159,26 +143,21 @@ export default function VocabularyPage() {
   if (!state.mounted || !state.progress) {
     return (
       <main className="flex flex-1 items-center justify-center p-8">
-        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">Lädt…</p>
+        <p className="text-sm font-semibold text-[var(--color-ink-soft)]">
+          {messages.common.loading}
+        </p>
       </main>
     );
   }
 
   const progress = state.progress;
 
-  // Discovered = everything that is not hidden (collected, in training, or vertraut).
-  // Pure derivation from existing progress — no new stored values.
   const statusById = new Map<string, CardStatus>(
     vocabData.map((vocab) => [vocab.id, getCardStatus(vocab, progress)])
   );
-  // `getCardStatus` reads only id/categoryId, so this predicate never touches a hidden
-  // card's protected text fields — the hierarchy progress helpers rely on that.
   const isDiscovered = (vocabId: string): boolean =>
     !isHiddenStatus(statusById.get(vocabId) ?? "locked");
 
-  // Area-scoped progress (Phase 3): the header talks about "Area 1", never about a
-  // percentage of the whole future Zukan — the collection keeps growing, so a global
-  // "X % complete" would be misleading. Totals count only entries that exist today.
   const area = vocabularyCollectionAreas[0];
   const areaProgress = getAreaProgress(area.id, isDiscovered);
   const areaPercent =
@@ -186,20 +165,13 @@ export default function VocabularyPage() {
       ? Math.round((areaProgress.discoveredWords / areaProgress.totalWords) * 100)
       : 0;
 
-  // Per-category collection view (chapter-based). No category-wide "complete" flag —
-  // completion is decided per chapter, so a category can always gain new chapters.
   const categoryViews = new Map<CategoryId, CategoryCollectionView>();
   for (const categoryId of VOCAB_CATEGORY_ORDER) {
     categoryViews.set(categoryId, buildCategoryCollectionView(categoryId, isDiscovered));
   }
 
-  // Display order = area.order → category order → chapter.order → entryOrder, via the
-  // canonical hierarchy sort. Precompute one rank per id, then order the visible cards.
   const orderRank = new Map<string, number>(
-    sortCollectionEntries(vocabData.map((vocab) => vocab.id)).map((id, index) => [
-      id,
-      index,
-    ])
+    sortCollectionEntries(vocabData.map((vocab) => vocab.id)).map((id, index) => [id, index])
   );
 
   const visibleCards = vocabData
@@ -214,8 +186,8 @@ export default function VocabularyPage() {
 
       // Collection protection: with no search active, hidden cards still render as a
       // silhouette. Once a search is active, an undiscovered card is excluded outright
-      // — and, because it was never added to `searchHaystacks`, its hidden
-      // kanji/kana/romaji/German was never even read to build the index.
+      // — and, because it was never added to `searchHaystacks`, its hidden content was
+      // never even read to build the index.
       if (normalizedQuery === "") return true;
       if (isHiddenStatus(statusById.get(vocab.id) ?? "locked")) return false;
 
@@ -228,11 +200,6 @@ export default function VocabularyPage() {
         (orderRank.get(b.id) ?? Number.MAX_SAFE_INTEGER)
     );
 
-  // Grouped display (Phase 5): without an active search, cards render in chapter
-  // sections following the hierarchy Area 1 → Kategorie → Kapitel → Eintrag. During a
-  // search the results stay one flat, simplified list. Chapters whose cards are all
-  // filtered out (category/register filter) are skipped entirely. The section's
-  // "discovered / total" is the chapter's real progress, independent of filters.
   interface ChapterSection {
     chapter: VocabularyCollectionChapter;
     progressView: ChapterProgressView;
@@ -264,7 +231,6 @@ export default function VocabularyPage() {
     setSelectedVocabId(vocabId);
   }
 
-  // One card renderer for both the grouped sections and the flat search results.
   function renderZukanCard(vocab: VocabItem) {
     const status = statusById.get(vocab.id) ?? "locked";
     return isHiddenStatus(status) ? (
@@ -286,40 +252,52 @@ export default function VocabularyPage() {
     window.setTimeout(() => dialogTriggerRef.current?.focus(), 0);
   }
 
+  const categoryFilters = CATEGORY_FILTER_IDS.map((id) => ({
+    id,
+    label:
+      id === "all"
+        ? messages.vocabulary.filterAll
+        : localizeContent(CATEGORY_FILTER_LABEL[id], locale),
+  }));
+
+  const registerFilters: { id: RegisterFilter; label: string }[] = [
+    { id: "all", label: messages.vocabulary.filterAll },
+    { id: "casual", label: messages.register.label.casual },
+    { id: "polite", label: messages.register.label.polite },
+  ];
+
   return (
     <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
-            Zur Karte
+            {messages.vocabulary.toMap}
           </Button>
         </div>
 
-        {/* 1+2: title + what this page is, understandable in seconds */}
         <div>
           <h1 className="text-2xl font-extrabold text-[var(--color-ink)] sm:text-3xl">
-            Dein Kotoba-Zukan
+            {messages.vocabulary.title}
           </h1>
-          <p className="mt-1 font-semibold text-[var(--color-ink)]">
-            Dein Sammellexikon für japanische Wörter.
-          </p>
+          <p className="mt-1 font-semibold text-[var(--color-ink)]">{messages.vocabulary.lead}</p>
           <p className="mt-1 max-w-2xl text-sm text-[var(--color-ink-soft)]">
-            Entdecke neue Wörter in Quests, sammle ihre Karten und trainiere sie, bis sie
-            dir vertraut sind.
+            {messages.vocabulary.intro}
           </p>
-          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
-            „Kotoba“ (言葉) heißt Wort · „Zukan“ (図鑑) heißt Sammellexikon.
-          </p>
+          <p className="mt-1 text-xs text-[var(--color-ink-soft)]">{messages.vocabulary.glossary}</p>
         </div>
 
-        {/* 3: area-scoped collection progress — no "whole Zukan complete" claims */}
+        {/* area-scoped collection progress — no "whole Zukan complete" claims */}
         <Card variant="default">
           <p className="text-xs font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
-            Area 1 · {area.titleGerman}
+            {formatMessage(messages.vocabulary.areaLabel, {
+              title: localizeContent(area.titleGerman, locale),
+            })}
           </p>
           <p className="mt-1 text-lg font-extrabold text-[var(--color-ink)] sm:text-xl">
-            {areaProgress.discoveredWords} / {areaProgress.totalWords} Einträge in Area 1
-            entdeckt
+            {formatMessage(messages.vocabulary.areaEntriesDiscovered, {
+              discovered: areaProgress.discoveredWords,
+              total: areaProgress.totalWords,
+            })}
           </p>
           <div
             className="xp-bar-track mt-2"
@@ -327,22 +305,25 @@ export default function VocabularyPage() {
             aria-valuemin={0}
             aria-valuemax={areaProgress.totalWords}
             aria-valuenow={areaProgress.discoveredWords}
-            aria-label={`Area 1: ${areaProgress.discoveredWords} von ${areaProgress.totalWords} Einträgen entdeckt`}
+            aria-label={formatMessage(messages.vocabulary.areaProgressAria, {
+              discovered: areaProgress.discoveredWords,
+              total: areaProgress.totalWords,
+            })}
           >
             <div className="xp-bar-fill" style={{ width: `${areaPercent}%` }} />
           </div>
           <p className="mt-1.5 text-sm text-[var(--color-ink-soft)]">
-            Deine Sammlung wächst mit jeder Etappe.
+            {messages.vocabulary.areaGrows}
           </p>
         </Card>
 
-        {/* 4: category Zukan panels (also act as the category filter) */}
+        {/* category Zukan panels (also act as the category filter) */}
         <section aria-labelledby="zukan-categories-heading">
           <h2
             id="zukan-categories-heading"
             className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase"
           >
-            Kategorien
+            {messages.vocabulary.categoriesHeading}
           </h2>
           <div className="mt-2 grid grid-cols-1 gap-3 min-[430px]:grid-cols-2 lg:grid-cols-4">
             {vocabularyCategoryCollection.map((category) => {
@@ -366,47 +347,30 @@ export default function VocabularyPage() {
           </div>
         </section>
 
-        {/* 5: how collecting works + what the statuses mean */}
+        {/* how collecting works + what the statuses mean */}
         <details className="soft-card px-4 py-2">
           <summary className="flex min-h-11 cursor-pointer items-center font-bold text-[var(--color-ink)]">
-            Wie funktioniert die Sammlung?
+            {messages.vocabulary.howItWorks}
           </summary>
           <ol className="mt-2 flex list-none flex-col gap-3 text-sm">
-            <RuleStep
-              number={1}
-              title="Quest abschließen"
-              text="Neue Wörter werden nach einer Etappe entdeckt."
-            />
-            <RuleStep
-              number={2}
-              title="Karte sammeln"
-              text="Entdeckte Wörter erscheinen vollständig in deinem Zukan."
-            />
-            <RuleStep
-              number={3}
-              title="Wort trainieren"
-              text="Durch Übung wird eine Karte von „Im Training“ zu „Vertraut“."
-            />
-            <RuleStep
-              number={4}
-              title="Kapitel abschließen"
-              text="Entdecke alle Wörter eines Kapitels."
-            />
+            <RuleStep number={1} title={messages.vocabulary.rule1Title} text={messages.vocabulary.rule1Text} />
+            <RuleStep number={2} title={messages.vocabulary.rule2Title} text={messages.vocabulary.rule2Text} />
+            <RuleStep number={3} title={messages.vocabulary.rule3Title} text={messages.vocabulary.rule3Text} />
+            <RuleStep number={4} title={messages.vocabulary.rule4Title} text={messages.vocabulary.rule4Text} />
           </ol>
           <p className="mt-3 text-sm text-[var(--color-ink-soft)]">
-            Zu jeder Kategorie kommen später neue Kapitel dazu. „Kapitel abgeschlossen“
-            bedeutet also nicht, dass eine Kategorie für immer vollständig ist.
+            {messages.vocabulary.chaptersNote}
           </p>
           <div className="mt-4 border-t border-[var(--color-secondary-border)] pt-3 pb-2">
             <p className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-              Was bedeuten die Status?
+              {messages.vocabulary.statusesMeaning}
             </p>
             <ul className="mt-2 flex flex-col gap-2">
-              {(Object.keys(ZUKAN_STATUS_LABEL) as ZukanStatus[]).map((status) => (
+              {ZUKAN_STATUS_ORDER.map((status) => (
                 <li key={status} className="flex flex-wrap items-center gap-2 text-sm">
                   <ZukanStatusBadge status={status} />
                   <span className="text-[var(--color-ink-soft)]">
-                    {ZUKAN_STATUS_DESCRIPTION[status]}
+                    {messages.vocabulary.statusDescription[status]}
                   </span>
                 </li>
               ))}
@@ -414,13 +378,13 @@ export default function VocabularyPage() {
           </div>
         </details>
 
-        {/* 6: search + filters (existing behavior, unchanged) */}
+        {/* search + filters */}
         <div>
           <label
             htmlFor="vocab-search"
             className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase"
           >
-            Wortkarten durchsuchen
+            {messages.vocabulary.searchLabel}
           </label>
           <div className="relative mt-2 max-w-md">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--color-ink-soft)]" />
@@ -429,14 +393,14 @@ export default function VocabularyPage() {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Japanisch, Kana, Romaji oder Deutsch"
+              placeholder={messages.vocabulary.searchPlaceholder}
               className="w-full rounded-xl border-2 border-[var(--color-secondary-border)] bg-white py-2.5 pr-11 pl-10 text-sm text-[var(--color-ink)] focus:border-[var(--color-primary)] focus:outline-none"
             />
             {query ? (
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                aria-label="Suche löschen"
+                aria-label={messages.vocabulary.clearSearch}
                 className="tap-scale absolute top-1/2 right-0 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
               >
                 <ClearIcon className="h-4 w-4" />
@@ -447,9 +411,9 @@ export default function VocabularyPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-            Kategorie
+            {messages.vocabulary.categoryFilterLabel}
           </span>
-          {CATEGORY_FILTERS.map((filter) => (
+          {categoryFilters.map((filter) => (
             <Button
               key={filter.id}
               variant={categoryFilter === filter.id ? "primary" : "secondary"}
@@ -465,9 +429,9 @@ export default function VocabularyPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-            Sprachstil
+            {messages.vocabulary.registerFilterLabel}
           </span>
-          {REGISTER_FILTERS.map((filter) => (
+          {registerFilters.map((filter) => (
             <Button
               key={filter.id}
               variant={registerFilter === filter.id ? "primary" : "secondary"}
@@ -482,17 +446,17 @@ export default function VocabularyPage() {
         </div>
 
         <p aria-live="polite" className="text-sm font-semibold text-[var(--color-ink-soft)]">
-          {formatResultCount(visibleCards.length)}
+          {formatResultCount(visibleCards.length, messages)}
         </p>
 
-        {/* 7: the entries — grouped by chapter, or one flat list while searching */}
+        {/* the entries — grouped by chapter, or one flat list while searching */}
         {visibleCards.length === 0 ? (
           <Card variant="default" className="text-center">
-            <p className="text-[var(--color-ink-soft)]">Keine passenden Wortkarten gefunden.</p>
+            <p className="text-[var(--color-ink-soft)]">{messages.vocabulary.noResultsTitle}</p>
             {normalizedQuery ? (
               <>
                 <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-                  Versuche einen anderen Suchbegriff oder ändere die Filter.
+                  {messages.vocabulary.noResultsBody}
                 </p>
                 <div className="mt-4 flex justify-center">
                   <Button
@@ -501,7 +465,7 @@ export default function VocabularyPage() {
                     className="min-h-11"
                     onClick={() => setQuery("")}
                   >
-                    Suche löschen
+                    {messages.vocabulary.clearSearch}
                   </Button>
                 </div>
               </>
@@ -520,26 +484,34 @@ export default function VocabularyPage() {
                 <section key={chapter.id} aria-labelledby={headingId}>
                   <div className="mb-3 border-l-4 border-[var(--color-primary-border)] pl-3">
                     <p className="text-xs font-bold tracking-wide text-[var(--color-primary-dark)] uppercase">
-                      {sectionCategory?.titleGerman ?? chapter.categoryId} · Kapitel{" "}
-                      {chapter.order}
+                      {formatMessage(messages.vocabulary.chapterKicker, {
+                        category: localizeContent(
+                          sectionCategory?.titleGerman ?? chapter.categoryId,
+                          locale
+                        ),
+                        chapter: chapter.order,
+                      })}
                     </p>
                     <h2
                       id={headingId}
                       className="text-lg font-extrabold text-[var(--color-ink)]"
                     >
-                      {chapter.titleGerman}
+                      {localizeContent(chapter.titleGerman, locale)}
                     </h2>
                     <p className="text-sm text-[var(--color-ink-soft)]">
-                      {chapter.subtitleGerman}
+                      {localizeContent(chapter.subtitleGerman, locale)}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <span className="text-sm font-semibold text-[var(--color-ink)]">
-                        {progressView.discovered} / {progressView.total} entdeckt
+                        {formatMessage(messages.vocabulary.discoveredOfTotal, {
+                          discovered: progressView.discovered,
+                          total: progressView.total,
+                        })}
                       </span>
                       {progressView.isCompleted ? (
                         <span className="zukan-complete-stamp">
                           <CheckIcon className="h-3 w-3" />
-                          Kapitel abgeschlossen
+                          {messages.vocabulary.chapterComplete}
                         </span>
                       ) : null}
                     </div>
@@ -578,15 +550,8 @@ interface CategoryPanelProps {
   onToggle: () => void;
 }
 
-/**
- * Category panel, chapter-based (Phase 4). Never claims a category is finished:
- * - the discovered count has no denominator (a category's final size is open-ended),
- * - there is NO category-wide progress bar — only the current chapter gets one,
- * - "Kapitel abgeschlossen" refers to the shown chapter, and the fixed footer
- *   "Weitere Kapitel folgen." says more is coming either way.
- * The "current" chapter is the first unfinished one (or the last one if all are done).
- */
 function CategoryPanel({ category, view, active, onToggle }: CategoryPanelProps) {
+  const { locale, messages } = useLanguage();
   const { discoveredWords, availableChapters, chapters } = view;
   const currentChapter =
     chapters.find((chapter) => !chapter.isCompleted) ?? chapters[chapters.length - 1];
@@ -613,16 +578,22 @@ function CategoryPanel({ category, view, active, onToggle }: CategoryPanelProps)
       <span className="flex items-center gap-2">
         <CategoryIcon iconKey={category.iconKey} className="h-5 w-5 shrink-0 text-[var(--color-primary-dark)]" />
         <span className="font-extrabold break-words text-[var(--color-ink)]">
-          {category.titleGerman}
+          {localizeContent(category.titleGerman, locale)}
         </span>
       </span>
       <span className="text-sm font-semibold text-[var(--color-ink)]">
-        {discoveredWords} {discoveredWords === 1 ? "Wort" : "Wörter"} entdeckt
+        {discoveredWords === 1
+          ? formatMessage(messages.vocabulary.wordDiscovered, { count: discoveredWords })
+          : formatMessage(messages.vocabulary.wordsDiscovered, { count: discoveredWords })}
       </span>
       {currentChapter ? (
         <>
           <span className="text-xs break-words text-[var(--color-ink-soft)]">
-            Kapitel {chapterNumber} von {availableChapters}: {currentChapter.titleGerman}
+            {formatMessage(messages.vocabulary.chapterOfTotal, {
+              chapter: chapterNumber,
+              total: availableChapters,
+              title: localizeContent(currentChapter.titleGerman, locale),
+            })}
           </span>
           <span className="xp-bar-track" aria-hidden="true">
             <span className="xp-bar-fill block" style={{ width: `${chapterPercent}%` }} />
@@ -630,22 +601,28 @@ function CategoryPanel({ category, view, active, onToggle }: CategoryPanelProps)
           {currentChapter.isCompleted ? (
             <span className="flex flex-wrap items-center gap-1.5">
               <span className="text-xs font-semibold text-[var(--color-ink)]">
-                {currentChapter.discovered} / {currentChapter.total} entdeckt
+                {formatMessage(messages.vocabulary.discoveredOfTotal, {
+                  discovered: currentChapter.discovered,
+                  total: currentChapter.total,
+                })}
               </span>
               <span className="zukan-complete-stamp self-start">
                 <CheckIcon className="h-3 w-3" />
-                Kapitel abgeschlossen
+                {messages.vocabulary.chapterComplete}
               </span>
             </span>
           ) : (
             <span className="text-xs font-semibold text-[var(--color-ink)]">
-              {currentChapter.discovered} / {currentChapter.total} entdeckt
+              {formatMessage(messages.vocabulary.discoveredOfTotal, {
+                discovered: currentChapter.discovered,
+                total: currentChapter.total,
+              })}
             </span>
           )}
         </>
       ) : null}
       <span className="text-[11px] text-[var(--color-ink-soft)] italic">
-        Weitere Kapitel folgen.
+        {messages.vocabulary.moreChaptersToCome}
       </span>
     </button>
   );
@@ -681,9 +658,13 @@ const ZUKAN_STATUS_BADGE_CLASSES: Record<ZukanStatus, string> = {
 };
 
 function ZukanStatusBadge({ status, className }: { status: ZukanStatus; className?: string }) {
+  const { messages } = useLanguage();
   return (
     <span
-      aria-label={`${ZUKAN_STATUS_LABEL[status]}: ${ZUKAN_STATUS_DESCRIPTION[status]}`}
+      aria-label={formatMessage(messages.vocabulary.statusAria, {
+        label: messages.vocabulary.statusLabel[status],
+        description: messages.vocabulary.statusDescription[status],
+      })}
       className={[
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wide whitespace-nowrap",
         ZUKAN_STATUS_BADGE_CLASSES[status],
@@ -693,7 +674,7 @@ function ZukanStatusBadge({ status, className }: { status: ZukanStatus; classNam
         .join(" ")}
     >
       <ZukanStatusIcon status={status} className="h-3 w-3 shrink-0" />
-      {ZUKAN_STATUS_LABEL[status]}
+      {messages.vocabulary.statusLabel[status]}
     </span>
   );
 }
@@ -872,8 +853,7 @@ function SpeakerIcon({ className }: { className?: string }) {
   );
 }
 
-/** Small paper-lantern mark for the Japan-Notiz section. Original inline SVG,
- *  decorative only (the visible text label carries the meaning). */
+/** Small paper-lantern mark for the Japan note section. Original inline SVG, decorative. */
 function LanternIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -922,12 +902,12 @@ interface ZukanCardProps {
 }
 
 function ZukanCard({ vocab, zukanStatus, entry, onOpen }: ZukanCardProps) {
+  const { locale, messages } = useLanguage();
   const category = getCategoryCollectionData(vocab.categoryId);
-  // Short hierarchy context next to the dex number ("Café · Kapitel 1") — the number
-  // alone is a stable id, not the thing that explains the order.
   const chapter = entry ? getChapterById(entry.chapterId) : undefined;
   const hasUsageExamples = (vocab.usageExamples?.length ?? 0) > 0;
   const openButtonRef = useRef<HTMLButtonElement>(null);
+  const meaning = localizeContent(vocab.german, locale);
 
   return (
     <Card variant="default" className="zukan-card-discovered flex flex-col gap-2">
@@ -946,15 +926,13 @@ function ZukanCard({ vocab, zukanStatus, entry, onOpen }: ZukanCardProps) {
           <p className="text-xs break-words text-[var(--color-ink-soft)]">
             {vocab.kana} · {vocab.romaji}
           </p>
-          <p className="text-sm font-semibold break-words text-[var(--color-ink)]">
-            {vocab.german}
-          </p>
+          <p className="text-sm font-semibold break-words text-[var(--color-ink)]">{meaning}</p>
         </div>
         <button
           type="button"
           onClick={() => speakJapanese(vocab.kanji)}
-          aria-label={`Aussprache von ${vocab.german} hören`}
-          title="Aussprache hören"
+          aria-label={formatMessage(messages.vocabulary.listenAria, { word: meaning })}
+          title={messages.vocabulary.listenTitle}
           className="tap-scale flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[var(--color-secondary-border)] bg-white text-[var(--color-primary-dark)] hover:border-[var(--color-primary)]"
         >
           <SpeakerIcon className="h-4 w-4" />
@@ -963,12 +941,14 @@ function ZukanCard({ vocab, zukanStatus, entry, onOpen }: ZukanCardProps) {
 
       <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-[var(--color-ink-soft)]">
         <span>
-          {category?.titleGerman ?? vocab.categoryId}
-          {chapter ? ` · Kapitel ${chapter.order}` : ""}
+          {localizeContent(category?.titleGerman ?? vocab.categoryId, locale)}
+          {chapter
+            ? ` · ${formatMessage(messages.vocabulary.chapterShort, { chapter: chapter.order })}`
+            : ""}
         </span>
         {hasUsageExamples ? (
           <span className="rounded-full bg-[var(--color-teal-soft)] px-2 py-0.5 font-bold text-[var(--color-teal)]">
-            Locker &amp; Höflich
+            {messages.vocabulary.casualPoliteTag}
           </span>
         ) : null}
       </div>
@@ -980,7 +960,7 @@ function ZukanCard({ vocab, zukanStatus, entry, onOpen }: ZukanCardProps) {
           onClick={() => onOpen(openButtonRef.current)}
           className="tap-scale inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-[var(--color-secondary-border)] bg-[var(--color-secondary)] px-3 py-1.5 text-sm font-bold text-[var(--color-ink)] hover:bg-[var(--color-primary-soft)]"
         >
-          Eintrag öffnen
+          {messages.vocabulary.openEntry}
         </button>
       </div>
     </Card>
@@ -992,9 +972,9 @@ function ZukanCard({ vocab, zukanStatus, entry, onOpen }: ZukanCardProps) {
 // ---------------------------------------------------------------------------
 
 function ZukanHiddenCard({ vocab }: { vocab: VocabItem }) {
-  // Reads only categoryId and the chapter position — never kanji/kana/romaji/german
-  // or the entry's German texts. Chapter membership is public structure (the section
-  // headers show it anyway), so no new information leaks here.
+  const { locale, messages } = useLanguage();
+  // Reads only categoryId and the chapter position — never kanji/kana/romaji/meaning
+  // or the entry's texts. Chapter membership is public structure, so nothing leaks.
   const category = getCategoryCollectionData(vocab.categoryId);
   const hiddenEntry = getCollectionEntry(vocab.id);
   const chapter = hiddenEntry ? getChapterById(hiddenEntry.chapterId) : undefined;
@@ -1012,13 +992,15 @@ function ZukanHiddenCard({ vocab }: { vocab: VocabItem }) {
         </span>
       </div>
 
-      <p className="text-lg font-extrabold text-[var(--color-locked)]">???</p>
+      <p className="text-lg font-extrabold text-[var(--color-locked)]">
+        {messages.vocabulary.hiddenTitle}
+      </p>
       <p className="text-xs font-semibold text-[var(--color-ink-soft)]">
-        Schließe Quests ab, um diese Karte zu entdecken.
+        {messages.vocabulary.hiddenHint}
       </p>
       <p className="mt-auto text-[11px] font-semibold text-[var(--color-ink-soft)]">
-        {category?.titleGerman ?? vocab.categoryId}
-        {chapter ? ` · Kapitel ${chapter.order}` : ""}
+        {localizeContent(category?.titleGerman ?? vocab.categoryId, locale)}
+        {chapter ? ` · ${chapter.order}` : ""}
       </p>
     </Card>
   );
@@ -1043,14 +1025,16 @@ function ZukanDetailDialog({
   onClose,
   onPractice,
 }: ZukanDetailDialogProps) {
+  const { locale, messages } = useLanguage();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const category = getCategoryCollectionData(vocab.categoryId);
   // Culture data is looked up ONLY here — the dialog opens exclusively for
-  // discovered cards, so a hidden card's Japan-Notiz is never read or rendered.
+  // discovered cards, so a hidden card's Japan note is never read or rendered.
   const cultureNote = getCultureNote(vocab.id);
   const hasUsageExamples = (vocab.usageExamples?.length ?? 0) > 0;
   const titleId = "zukan-dialog-title";
   const descriptionId = "zukan-dialog-description";
+  const meaning = localizeContent(vocab.german, locale);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -1079,8 +1063,6 @@ function ZukanDetailDialog({
   }, []);
 
   useEffect(() => {
-    // Esc support for the non-showModal fallback (harmless duplicate when the
-    // native dialog already handled it — onClose is idempotent).
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
     }
@@ -1096,19 +1078,20 @@ function ZukanDetailDialog({
       aria-describedby={descriptionId}
       onClose={onClose}
       onClick={(event) => {
-        // A click on the backdrop region targets the <dialog> element itself.
         if (event.target === dialogRef.current) onClose();
       }}
     >
       <div className="zukan-dialog-body flex flex-col gap-4">
         <div className="flex items-start justify-between gap-2">
           <h2 id={titleId} className="text-lg font-extrabold text-[var(--color-ink)]">
-            Zukan-Eintrag {entry ? formatCollectionNumber(entry.collectionNumber) : ""}
+            {formatMessage(messages.vocabulary.dialogEntryTitle, {
+              number: entry ? formatCollectionNumber(entry.collectionNumber) : "",
+            })}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Eintrag schließen"
+            aria-label={messages.vocabulary.closeEntry}
             className="tap-scale -mt-1 -mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-ink-soft)] hover:bg-[var(--color-locked-bg)] hover:text-[var(--color-ink)]"
           >
             <CloseIcon className="h-5 w-5" />
@@ -1117,7 +1100,9 @@ function ZukanDetailDialog({
 
         <div className="flex flex-wrap items-center gap-2">
           <ZukanStatusBadge status={zukanStatus} />
-          {category ? <Badge variant="gray">{category.titleGerman}</Badge> : null}
+          {category ? (
+            <Badge variant="gray">{localizeContent(category.titleGerman, locale)}</Badge>
+          ) : null}
         </div>
 
         <div className="flex items-start justify-between gap-3">
@@ -1128,15 +1113,13 @@ function ZukanDetailDialog({
             <p className="mt-1 text-sm break-words text-[var(--color-ink-soft)]">
               {vocab.kana} · {vocab.romaji}
             </p>
-            <p className="text-base font-bold break-words text-[var(--color-ink)]">
-              {vocab.german}
-            </p>
+            <p className="text-base font-bold break-words text-[var(--color-ink)]">{meaning}</p>
           </div>
           <button
             type="button"
             onClick={() => speakJapanese(vocab.kanji)}
-            aria-label={`Aussprache von ${vocab.german} hören`}
-            title="Aussprache hören"
+            aria-label={formatMessage(messages.vocabulary.listenAria, { word: meaning })}
+            title={messages.vocabulary.listenTitle}
             className="tap-scale flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[var(--color-secondary-border)] bg-white text-[var(--color-primary-dark)] hover:border-[var(--color-primary)]"
           >
             <SpeakerIcon className="h-4 w-4" />
@@ -1146,10 +1129,10 @@ function ZukanDetailDialog({
         {entry ? (
           <section>
             <h3 className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-              Zukan-Notiz
+              {messages.vocabulary.zukanNote}
             </h3>
             <p id={descriptionId} className="mt-1 text-sm text-[var(--color-ink)] italic">
-              {entry.dexDescriptionGerman}
+              {localizeContent(entry.dexDescriptionGerman, locale)}
             </p>
           </section>
         ) : null}
@@ -1158,51 +1141,55 @@ function ZukanDetailDialog({
           <section className="rounded-xl border border-[var(--color-teal-border)] bg-[var(--color-teal-soft)] px-3 py-2.5">
             <h3 className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-[var(--color-teal)] uppercase">
               <LanternIcon className="h-3.5 w-3.5 shrink-0" />
-              Japan-Notiz · {CULTURE_NOTE_TYPE_LABEL[cultureNote.type]}
+              {messages.vocabulary.japanNote} · {messages.cultureNoteType[cultureNote.type]}
             </h3>
             <p className="mt-1 text-sm break-words text-[var(--color-ink)]">
-              {cultureNote.japanNoteGerman}
+              {localizeContent(cultureNote.japanNoteGerman, locale)}
             </p>
           </section>
         ) : null}
 
         <section className="soft-card px-3 py-2.5">
           <h3 className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-            Beispiel
+            {messages.vocabulary.exampleHeading}
           </h3>
           <p className="mt-1 font-bold break-words text-[var(--color-ink)]">
             {vocab.exampleJapanese}
           </p>
           <p className="text-sm break-words text-[var(--color-ink-soft)]">{vocab.exampleKana}</p>
-          <p className="text-sm break-words text-[var(--color-ink-soft)]">{vocab.exampleGerman}</p>
+          <p className="text-sm break-words text-[var(--color-ink-soft)]">
+            {localizeContent(vocab.exampleGerman, locale)}
+          </p>
         </section>
 
         {entry ? (
           <section>
             <h3 className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-              So setzt du es ein
+              {messages.vocabulary.howToUse}
             </h3>
-            <p className="mt-1 text-sm text-[var(--color-ink)]">{entry.usageRoleGerman}</p>
+            <p className="mt-1 text-sm text-[var(--color-ink)]">
+              {localizeContent(entry.usageRoleGerman, locale)}
+            </p>
           </section>
         ) : null}
 
         {entry ? (
           <section className="rounded-xl border border-[var(--color-gold-border)] bg-[var(--color-gold-soft)] px-3 py-2.5">
             <h3 className="text-xs font-bold tracking-wide text-[var(--color-gold)] uppercase">
-              Merke
+              {messages.vocabulary.remember}
             </h3>
             <p className="mt-1 text-sm font-semibold break-words text-[var(--color-ink)]">
-              {entry.memoryHookGerman}
+              {localizeContent(entry.memoryHookGerman, locale)}
             </p>
           </section>
         ) : null}
 
-        <p className="text-sm text-[var(--color-ink)]">{vocab.shortTip}</p>
+        <p className="text-sm text-[var(--color-ink)]">{localizeContent(vocab.shortTip, locale)}</p>
 
         {hasUsageExamples ? (
           <section>
             <h3 className="text-xs font-bold tracking-wide text-[var(--color-ink-soft)] uppercase">
-              Locker &amp; Höflich
+              {messages.vocabulary.casualPoliteHeading}
             </h3>
             <UsageExampleComparison usageExamples={vocab.usageExamples} className="mt-2" />
           </section>
@@ -1210,27 +1197,33 @@ function ZukanDetailDialog({
 
         <details className="rounded-xl border border-[var(--color-secondary-border)] px-3 py-1">
           <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold text-[var(--color-ink)]">
-            Mehr wissen
+            {messages.vocabulary.knowMore}
           </summary>
           <div className="flex flex-col gap-2 pt-1 pb-2 text-sm text-[var(--color-ink-soft)]">
-            <p className="text-[var(--color-ink)]">{vocab.detailTip}</p>
+            <p className="text-[var(--color-ink)]">{localizeContent(vocab.detailTip, locale)}</p>
             <p>
-              <span className="font-semibold text-[var(--color-ink)]">Beispiele: </span>
+              <span className="font-semibold text-[var(--color-ink)]">
+                {messages.vocabulary.examplesLabel}:{" "}
+              </span>
               {vocab.commonExamples.join(" / ")}
             </p>
             <p>
-              <span className="font-semibold text-[var(--color-ink)]">Muster: </span>
+              <span className="font-semibold text-[var(--color-ink)]">
+                {messages.vocabulary.patternsLabel}:{" "}
+              </span>
               {vocab.commonPatterns.join(" / ")}
             </p>
             <p>
-              <span className="font-semibold text-[var(--color-ink)]">Verwandt: </span>
+              <span className="font-semibold text-[var(--color-ink)]">
+                {messages.vocabulary.relatedLabel}:{" "}
+              </span>
               {vocab.relatedExpressions.join(" / ")}
             </p>
           </div>
         </details>
 
         <Button variant="primary" onClick={onPractice} className="w-full">
-          Karte üben
+          {messages.vocabulary.practiceCard}
         </Button>
       </div>
     </dialog>
